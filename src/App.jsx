@@ -1,15 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
-import { VisualizerView } from './components/VisualizerView';
-import { StackQueueView } from './components/DataStructures/StackQueueView';
-import { TreeView } from './components/DataStructures/TreeView';
-import { GraphView } from './components/DataStructures/GraphView';
-import { BenchmarkLab } from './components/BenchmarkLab';
-import { MathLab } from './components/MathLab';
-import { Cpu, Play, Zap, Calculator, Layers, Menu, X, GitBranch, Network } from 'lucide-react';
+import { Home } from './components/Home';
+import {
+  Cpu,
+  Play,
+  Zap,
+  Calculator,
+  Layers,
+  Menu,
+  X,
+  GitBranch,
+  Network,
+  Home as HomeIcon,
+  CheckCircle2
+} from 'lucide-react';
+
+// Code-split dynamic routes for optimized bundle sizes & fast initial load
+const VisualizerView = lazy(() =>
+  import('./components/VisualizerView').then((m) => ({ default: m.VisualizerView }))
+);
+const StackQueueView = lazy(() =>
+  import('./components/DataStructures/StackQueueView').then((m) => ({ default: m.StackQueueView }))
+);
+const TreeView = lazy(() =>
+  import('./components/DataStructures/TreeView').then((m) => ({ default: m.TreeView }))
+);
+const GraphView = lazy(() =>
+  import('./components/DataStructures/GraphView').then((m) => ({ default: m.GraphView }))
+);
+const BenchmarkLab = lazy(() =>
+  import('./components/BenchmarkLab').then((m) => ({ default: m.BenchmarkLab }))
+);
+const MathLab = lazy(() =>
+  import('./components/MathLab').then((m) => ({ default: m.MathLab }))
+);
+
+/**
+ * Minimalist Loading Spinner adhering to Dynamic Theming tokens
+ */
+function RouteFallback() {
+  return (
+    <div className="h-full w-full min-h-[360px] flex flex-col items-center justify-center space-y-3">
+      <div className="w-8 h-8 rounded-full border-2 border-theme-border border-t-theme-primary animate-spin" />
+      <span className="text-xs font-mono text-theme-text-muted">Loading module...</span>
+    </div>
+  );
+}
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'trees' | 'graphs' | 'benchmark' | 'recurrence'
+  const [currentView, setCurrentView] = useState('home'); // 'home' | 'visualizer' | 'data-structures' | 'trees' | 'graphs' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
   const [selectedDS, setSelectedDS] = useState('stack');
   const [currentTheme, setCurrentTheme] = useState('default');
@@ -24,8 +63,17 @@ export default function App() {
     }
   }, [currentTheme]);
 
+  const handleNavigate = (view, algoId) => {
+    setCurrentView(view);
+    if (algoId) {
+      setSelectedAlgo(algoId);
+    }
+  };
+
   const getBreadcrumb = () => {
     switch (currentView) {
+      case 'home':
+        return '/ Overview / Theory vs. Reality';
       case 'data-structures':
         return `/ Data Structures / ${selectedDS === 'stack' ? 'Stack (LIFO)' : 'Queue (FIFO)'}`;
       case 'trees':
@@ -112,8 +160,9 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 4.3 Active
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Production Ready</span>
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
                 {getBreadcrumb()}
@@ -122,7 +171,19 @@ export default function App() {
           </div>
 
           {/* Quick Header View Toggle Switch */}
-          <div className="flex items-center gap-1.5 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono overflow-x-auto max-w-[55vw] sm:max-w-none">
+            <button
+              onClick={() => setCurrentView('home')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                currentView === 'home'
+                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <HomeIcon className="w-3 h-3 text-purple-400" />
+              <span className="hidden sm:inline">Overview</span>
+            </button>
+
             <button
               onClick={() => setCurrentView('visualizer')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
@@ -200,22 +261,26 @@ export default function App() {
         {/* Workbench Workspace */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-6xl mx-auto h-full flex flex-col">
-            {currentView === 'visualizer' ? (
-              <VisualizerView
-                currentAlgoId={selectedAlgo}
-                onAlgoChange={setSelectedAlgo}
-              />
-            ) : currentView === 'data-structures' ? (
-              <StackQueueView initialMode={selectedDS} />
-            ) : currentView === 'trees' ? (
-              <TreeView />
-            ) : currentView === 'graphs' ? (
-              <GraphView />
-            ) : currentView === 'benchmark' ? (
-              <BenchmarkLab />
-            ) : (
-              <MathLab />
-            )}
+            <Suspense fallback={<RouteFallback />}>
+              {currentView === 'home' ? (
+                <Home onNavigate={handleNavigate} />
+              ) : currentView === 'visualizer' ? (
+                <VisualizerView
+                  currentAlgoId={selectedAlgo}
+                  onAlgoChange={setSelectedAlgo}
+                />
+              ) : currentView === 'data-structures' ? (
+                <StackQueueView initialMode={selectedDS} />
+              ) : currentView === 'trees' ? (
+                <TreeView />
+              ) : currentView === 'graphs' ? (
+                <GraphView />
+              ) : currentView === 'benchmark' ? (
+                <BenchmarkLab />
+              ) : (
+                <MathLab />
+              )}
+            </Suspense>
           </div>
         </main>
       </div>

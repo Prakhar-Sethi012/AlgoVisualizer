@@ -16,7 +16,8 @@ import {
   Layers,
   Calculator,
   Box,
-  GitBranch
+  GitBranch,
+  Home as HomeIcon
 } from 'lucide-react';
 
 export const ALGORITHM_CATEGORIES = [
@@ -94,7 +95,10 @@ export function Navigation({
   return (
     <aside className="w-64 bg-theme-surface border-r border-theme-border flex flex-col h-full flex-shrink-0 select-none">
       {/* Brand Header */}
-      <div className="p-4 border-b border-theme-border flex items-center justify-between">
+      <div
+        onClick={() => onViewChange && onViewChange('home')}
+        className="p-4 border-b border-theme-border flex items-center justify-between cursor-pointer hover:bg-theme-surface-hover/60 transition-colors"
+      >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-theme-primary/10 border border-theme-primary/30 flex items-center justify-center text-theme-primary">
             <Activity className="w-4 h-4" />
@@ -112,6 +116,25 @@ export function Navigation({
 
       {/* Primary Workspace View Toggles */}
       <div className="p-3 border-b border-theme-border space-y-1 bg-theme-bg/30">
+        <button
+          onClick={() => onViewChange && onViewChange('home')}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'home'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <HomeIcon className="w-3.5 h-3.5" />
+            <span>Overview / Home</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'home' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+          }`}>
+            Guide
+          </span>
+        </button>
+
         <button
           onClick={() => onViewChange && onViewChange('visualizer')}
           className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${

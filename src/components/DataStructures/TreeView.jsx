@@ -43,21 +43,45 @@ export function TreeView() {
   const containerRef = useRef(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 800, height: 450 });
 
-  // Update container dimensions on resize
+  // Dynamically update container dimensions on window and container resize
   useEffect(() => {
     function updateDimensions() {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
-        setContainerDimensions({
-          width: Math.max(clientWidth, 600),
-          height: Math.max(clientHeight, 400)
-        });
+        if (clientWidth > 0 && clientHeight > 0) {
+          setContainerDimensions({
+            width: Math.max(clientWidth, 360),
+            height: Math.max(clientHeight, 360)
+          });
+        }
       }
     }
 
     updateDimensions();
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            setContainerDimensions({
+              width: Math.max(width, 360),
+              height: Math.max(height, 360)
+            });
+          }
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
+    };
   }, []);
 
   // Compute node and edge layout from current tree snapshot

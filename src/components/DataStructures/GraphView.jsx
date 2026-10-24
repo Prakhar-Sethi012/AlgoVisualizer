@@ -43,20 +43,44 @@ export function GraphView() {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 720, height: 400 });
 
-  // Compute responsive node positions
+  // Dynamically recompute node positions on container or window resize
   useEffect(() => {
     function handleResize() {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
-        setDimensions({
-          width: Math.max(clientWidth, 540),
-          height: Math.max(clientHeight, 360)
-        });
+        if (clientWidth > 0 && clientHeight > 0) {
+          setDimensions({
+            width: Math.max(clientWidth, 340),
+            height: Math.max(clientHeight, 340)
+          });
+        }
       }
     }
     handleResize();
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            setDimensions({
+              width: Math.max(width, 340),
+              height: Math.max(height, 340)
+            });
+          }
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const nodes = useMemo(() => {

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { VisualizerView } from './components/VisualizerView';
 import { StackQueueView } from './components/DataStructures/StackQueueView';
+import { TreeView } from './components/DataStructures/TreeView';
 import { BenchmarkLab } from './components/BenchmarkLab';
 import { MathLab } from './components/MathLab';
-import { Cpu, Play, Zap, Calculator, Layers, Menu, X } from 'lucide-react';
+import { Cpu, Play, Zap, Calculator, Layers, Menu, X, GitBranch } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'benchmark' | 'recurrence'
+  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'trees' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
   const [selectedDS, setSelectedDS] = useState('stack');
   const [currentTheme, setCurrentTheme] = useState('default');
@@ -26,6 +27,8 @@ export default function App() {
     switch (currentView) {
       case 'data-structures':
         return `/ Data Structures / ${selectedDS === 'stack' ? 'Stack (LIFO)' : 'Queue (FIFO)'}`;
+      case 'trees':
+        return '/ Trees / AVL Tree (Self-Balancing Rotations)';
       case 'benchmark':
         return '/ Benchmarking Lab (Web Worker Offloaded)';
       case 'recurrence':
@@ -107,7 +110,7 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 4.1 Active
+                Phase 4.2 Active
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
                 {getBreadcrumb()}
@@ -142,6 +145,18 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setCurrentView('trees')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                currentView === 'trees'
+                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <GitBranch className="w-3 h-3 text-purple-400" />
+              <span className="hidden sm:inline">AVL Tree</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView('benchmark')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'benchmark'
@@ -157,11 +172,11 @@ export default function App() {
               onClick={() => setCurrentView('recurrence')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'recurrence'
-                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
+                  ? 'bg-theme-card text-amber-400 font-semibold shadow-subtle border border-theme-border'
                   : 'text-theme-text-muted hover:text-theme-text'
               }`}
             >
-              <Calculator className="w-3 h-3 text-purple-400" />
+              <Calculator className="w-3 h-3 text-amber-400" />
               <span className="hidden sm:inline">Solver</span>
             </button>
           </div>
@@ -177,6 +192,8 @@ export default function App() {
               />
             ) : currentView === 'data-structures' ? (
               <StackQueueView initialMode={selectedDS} />
+            ) : currentView === 'trees' ? (
+              <TreeView />
             ) : currentView === 'benchmark' ? (
               <BenchmarkLab />
             ) : (

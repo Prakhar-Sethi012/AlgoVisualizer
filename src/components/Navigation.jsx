@@ -15,7 +15,8 @@ import {
   Play,
   Layers,
   Calculator,
-  Box
+  Box,
+  GitBranch
 } from 'lucide-react';
 
 export const ALGORITHM_CATEGORIES = [
@@ -54,6 +55,7 @@ export const ALGORITHM_CATEGORIES = [
     name: 'Trees',
     icon: GitFork,
     algorithms: [
+      { id: 'avl-tree', name: 'AVL Tree (Self-Balancing)', implemented: true, tag: 'AVL' },
       { id: 'bst-operations', name: 'BST Operations', implemented: false, tag: 'Next Phase' },
       { id: 'tree-traversal', name: 'In/Pre/Post Order', implemented: false, tag: 'Next Phase' },
     ]
@@ -146,6 +148,25 @@ export function Navigation({
         </button>
 
         <button
+          onClick={() => onViewChange && onViewChange('trees')}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'trees'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>AVL Tree</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'trees' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+          }`}>
+            Rotations
+          </span>
+        </button>
+
+        <button
           onClick={() => onViewChange && onViewChange('benchmark')}
           className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'benchmark'
@@ -177,7 +198,7 @@ export function Navigation({
             <span>Recurrence Solver</span>
           </div>
           <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'recurrence' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+            currentView === 'recurrence' ? 'bg-black/10' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
           }`}>
             Master Thm
           </span>
@@ -202,8 +223,11 @@ export function Navigation({
               <div className="space-y-0.5">
                 {category.algorithms.map((algo) => {
                   const isDS = category.id === 'data-structures';
+                  const isTree = category.id === 'trees';
                   const isSelected = isDS
                     ? currentView === 'data-structures' && selectedDS === algo.id
+                    : isTree
+                    ? currentView === 'trees' && algo.id === 'avl-tree'
                     : currentView === 'visualizer' && selectedAlgo === algo.id;
 
                   return (
@@ -214,6 +238,8 @@ export function Navigation({
                           if (isDS) {
                             if (onViewChange) onViewChange('data-structures');
                             if (onSelectDS) onSelectDS(algo.id);
+                          } else if (isTree) {
+                            if (onViewChange) onViewChange('trees');
                           } else {
                             if (onViewChange) onViewChange('visualizer');
                             if (onSelectAlgo) onSelectAlgo(algo.id);
@@ -274,8 +300,8 @@ export function Navigation({
           ))}
         </select>
         <div className="mt-2 text-[10px] text-theme-text-muted font-mono px-1 flex items-center justify-between">
-          <span>Visualizer Core:</span>
-          <span className="text-emerald-400">Generator + Worker</span>
+          <span>Engine Core:</span>
+          <span className="text-emerald-400">Generator + Trees</span>
         </div>
       </div>
     </aside>

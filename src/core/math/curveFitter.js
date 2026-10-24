@@ -114,7 +114,9 @@ export function enrichDatasetWithTheory(benchmarkResults, algorithms = ['bubble'
   const algoComplexityMap = {
     bubble: 'n^2',
     quick: 'nlogn',
-    merge: 'nlogn'
+    merge: 'nlogn',
+    linear: 'n',
+    binary: 'logn'
   };
 
   // Find scaling constant C for each requested algorithm using largest N

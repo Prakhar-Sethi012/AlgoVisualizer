@@ -1,11 +1,18 @@
 import { rawBubbleSort } from '../core/algorithms/raw/bubbleSort.js';
 import { rawMergeSort } from '../core/algorithms/raw/mergeSort.js';
 import { rawQuickSort } from '../core/algorithms/raw/quickSort.js';
+import { rawLinearSearch } from '../core/algorithms/raw/linearSearch.js';
+import { rawBinarySearch } from '../core/algorithms/raw/binarySearch.js';
 
-const ALGO_FUNCTIONS = {
+const SORT_FUNCTIONS = {
   bubble: rawBubbleSort,
   merge: rawMergeSort,
   quick: rawQuickSort
+};
+
+const SEARCH_FUNCTIONS = {
+  linear: rawLinearSearch,
+  binary: rawBinarySearch
 };
 
 /**
@@ -17,37 +24,109 @@ function warmupV8() {
   rawQuickSort([...dummy]);
   rawMergeSort([...dummy]);
   rawBubbleSort(dummy.slice(0, 100));
+
+  const sortedDummy = new Int32Array(500);
+  for (let i = 0; i < 500; i++) sortedDummy[i] = i * 2;
+  rawBinarySearch(sortedDummy, 250);
+  rawLinearSearch(sortedDummy, 250);
 }
 
 // Handle messages from the main thread
 self.onmessage = function (event) {
-  const { algorithms = ['bubble', 'merge', 'quick'], sizes = [1000, 5000, 10000, 25000] } = event.data || {};
+  const {
+    mode = 'sorting',
+    algorithms,
+    sizes
+  } = event.data || {};
 
   // 1. JIT Warmup
   self.postMessage({ type: 'status', message: 'Warming up V8 JIT compiler...' });
   warmupV8();
 
+  if (mode === 'searching') {
+    // ================= SEARCHING BENCHMARK (Massive Datasets: 100k - 5M) =================
+    const searchSizes = sizes || [100000, 500000, 1000000, 5000000];
+    const searchAlgos = algorithms || ['linear', 'binary'];
+    const results = [];
+    const totalTasks = searchSizes.length * searchAlgos.length;
+    let completedTasks = 0;
+
+    for (let sIdx = 0; sIdx < searchSizes.length; sIdx++) {
+      const size = searchSizes[sIdx];
+      self.postMessage({
+        type: 'status',
+        message: `Allocating contiguous dataset for N = ${size.toLocaleString()}...`
+      });
+
+      // Use Int32Array for memory efficiency on 5M elements (only 20MB RAM)
+      const sortedDataset = new Int32Array(size);
+      for (let i = 0; i < size; i++) {
+        sortedDataset[i] = i * 2;
+      }
+
+      // Pick target at 90% of dataset so Linear Search demonstrates true O(N) traversal
+      const target = sortedDataset[Math.floor(size * 0.9)];
+      const resultRow = { size };
+
+      for (let aIdx = 0; aIdx < searchAlgos.length; aIdx++) {
+        const algoKey = searchAlgos[aIdx].toLowerCase();
+        const searchFn = SEARCH_FUNCTIONS[algoKey];
+
+        if (!searchFn) {
+          resultRow[algoKey] = 0;
+          continue;
+        }
+
+        self.postMessage({
+          type: 'progress',
+          currentSize: size,
+          currentAlgorithm: algoKey,
+          progressPercent: Math.round((completedTasks / totalTasks) * 100)
+        });
+
+        // Time measurement
+        const startTime = performance.now();
+        searchFn(sortedDataset, target);
+        const endTime = performance.now();
+
+        const durationMs = Number((endTime - startTime).toFixed(4));
+        resultRow[algoKey] = durationMs;
+
+        completedTasks++;
+      }
+
+      results.push(resultRow);
+    }
+
+    self.postMessage({
+      type: 'done',
+      results: results,
+      data: results
+    });
+    return;
+  }
+
+  // ================= SORTING BENCHMARK (1k - 25k) =================
+  const sortSizes = sizes || [1000, 5000, 10000, 25000];
+  const sortAlgos = algorithms || ['bubble', 'merge', 'quick'];
   const results = [];
-  const totalTasks = sizes.length * algorithms.length;
+  const totalTasks = sortSizes.length * sortAlgos.length;
   let completedTasks = 0;
 
-  // 2. Loop through each size and benchmark
-  for (let sIdx = 0; sIdx < sizes.length; sIdx++) {
-    const size = sizes[sIdx];
-    // Generate fresh pseudo-random dataset for this size
+  for (let sIdx = 0; sIdx < sortSizes.length; sIdx++) {
+    const size = sortSizes[sIdx];
     const baseDataset = Array.from({ length: size }, () => Math.floor(Math.random() * 1000000));
     const resultRow = { size };
 
-    for (let aIdx = 0; aIdx < algorithms.length; aIdx++) {
-      const algoKey = algorithms[aIdx].toLowerCase();
-      const sortFn = ALGO_FUNCTIONS[algoKey];
+    for (let aIdx = 0; aIdx < sortAlgos.length; aIdx++) {
+      const algoKey = sortAlgos[aIdx].toLowerCase();
+      const sortFn = SORT_FUNCTIONS[algoKey];
 
       if (!sortFn) {
         resultRow[algoKey] = 0;
         continue;
       }
 
-      // Notify main thread of current task
       self.postMessage({
         type: 'progress',
         currentSize: size,
@@ -55,15 +134,11 @@ self.onmessage = function (event) {
         progressPercent: Math.round((completedTasks / totalTasks) * 100)
       });
 
-      // Clone dataset so every algorithm receives the exact same unsorted input
       const inputCopy = [...baseDataset];
-
-      // Measure execution time
       const startTime = performance.now();
       sortFn(inputCopy);
       const endTime = performance.now();
 
-      // Precision in milliseconds (3 decimal places)
       const durationMs = Number((endTime - startTime).toFixed(3));
       resultRow[algoKey] = durationMs;
 
@@ -73,11 +148,9 @@ self.onmessage = function (event) {
     results.push(resultRow);
   }
 
-  // 3. Post final results back to main thread
   self.postMessage({
     type: 'done',
     results: results,
-    // Direct array for simple consumers
     data: results
   });
 };

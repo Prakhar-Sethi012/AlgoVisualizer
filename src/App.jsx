@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { VisualizerView } from './components/VisualizerView';
+import { StackQueueView } from './components/DataStructures/StackQueueView';
 import { BenchmarkLab } from './components/BenchmarkLab';
 import { MathLab } from './components/MathLab';
-import { Cpu, Play, Zap, Calculator, Menu, X } from 'lucide-react';
+import { Cpu, Play, Zap, Calculator, Layers, Menu, X } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'benchmark' | 'recurrence'
+  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
+  const [selectedDS, setSelectedDS] = useState('stack');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -20,6 +22,27 @@ export default function App() {
     }
   }, [currentTheme]);
 
+  const getBreadcrumb = () => {
+    switch (currentView) {
+      case 'data-structures':
+        return `/ Data Structures / ${selectedDS === 'stack' ? 'Stack (LIFO)' : 'Queue (FIFO)'}`;
+      case 'benchmark':
+        return '/ Benchmarking Lab (Web Worker Offloaded)';
+      case 'recurrence':
+        return '/ Recurrence Solver (Master Theorem Engine)';
+      default: {
+        const names = {
+          'bubble-sort': 'Sorting / Bubble Sort',
+          'quick-sort': 'Sorting / Quick Sort',
+          'merge-sort': 'Sorting / Merge Sort',
+          'linear-search': 'Searching / Linear Search',
+          'binary-search': 'Searching / Binary Search'
+        };
+        return `/ ${names[selectedAlgo] || selectedAlgo}`;
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-sans">
       {/* Desktop Sidebar Navigation */}
@@ -29,6 +52,8 @@ export default function App() {
           onViewChange={setCurrentView}
           selectedAlgo={selectedAlgo}
           onSelectAlgo={setSelectedAlgo}
+          selectedDS={selectedDS}
+          onSelectDS={setSelectedDS}
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
         />
@@ -55,6 +80,11 @@ export default function App() {
                 setSelectedAlgo(id);
                 setIsMobileNavOpen(false);
               }}
+              selectedDS={selectedDS}
+              onSelectDS={(ds) => {
+                setSelectedDS(ds);
+                setIsMobileNavOpen(false);
+              }}
               currentTheme={currentTheme}
               onThemeChange={setCurrentTheme}
             />
@@ -77,14 +107,10 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 3 Active
+                Phase 4.1 Active
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
-                {currentView === 'benchmark'
-                  ? '/ Benchmarking Lab (Theory Overlay Enabled)'
-                  : currentView === 'recurrence'
-                  ? '/ Recurrence Solver (Master Theorem Engine)'
-                  : `/ Sorting / ${selectedAlgo === 'bubble-sort' ? 'Bubble Sort' : selectedAlgo === 'quick-sort' ? 'Quick Sort' : 'Merge Sort'}`}
+                {getBreadcrumb()}
               </span>
             </div>
           </div>
@@ -93,36 +119,50 @@ export default function App() {
           <div className="flex items-center gap-1.5 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono">
             <button
               onClick={() => setCurrentView('visualizer')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'visualizer'
                   ? 'bg-theme-card text-theme-primary font-semibold shadow-subtle border border-theme-border'
                   : 'text-theme-text-muted hover:text-theme-text'
               }`}
             >
               <Play className="w-3 h-3 fill-current" />
-              <span>Visualizer</span>
+              <span className="hidden sm:inline">Visualizer</span>
             </button>
+
+            <button
+              onClick={() => setCurrentView('data-structures')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                currentView === 'data-structures'
+                  ? 'bg-theme-card text-cyan-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <Layers className="w-3 h-3 text-cyan-400" />
+              <span className="hidden sm:inline">Stack & Queue</span>
+            </button>
+
             <button
               onClick={() => setCurrentView('benchmark')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'benchmark'
                   ? 'bg-theme-card text-emerald-400 font-semibold shadow-subtle border border-theme-border'
                   : 'text-theme-text-muted hover:text-theme-text'
               }`}
             >
               <Zap className="w-3 h-3 text-emerald-400" />
-              <span>Benchmark</span>
+              <span className="hidden sm:inline">Benchmark</span>
             </button>
+
             <button
               onClick={() => setCurrentView('recurrence')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'recurrence'
                   ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
                   : 'text-theme-text-muted hover:text-theme-text'
               }`}
             >
               <Calculator className="w-3 h-3 text-purple-400" />
-              <span>Solver</span>
+              <span className="hidden sm:inline">Solver</span>
             </button>
           </div>
         </header>
@@ -135,6 +175,8 @@ export default function App() {
                 currentAlgoId={selectedAlgo}
                 onAlgoChange={setSelectedAlgo}
               />
+            ) : currentView === 'data-structures' ? (
+              <StackQueueView initialMode={selectedDS} />
             ) : currentView === 'benchmark' ? (
               <BenchmarkLab />
             ) : (

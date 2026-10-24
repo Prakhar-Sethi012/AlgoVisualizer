@@ -21,27 +21,42 @@ import {
   Layers,
   Sparkles,
   Info,
-  TrendingUp
+  TrendingUp,
+  Search,
+  ArrowDownUp
 } from 'lucide-react';
 import BenchmarkWorker from '../workers/benchmark.worker.js?worker';
 import { enrichDatasetWithTheory } from '../core/math/curveFitter';
 
-const ALGORITHM_CONFIGS = [
+const SORT_ALGO_CONFIGS = [
   { id: 'bubble', name: 'Bubble Sort', complexity: 'O(n²)', color: '#f59e0b', defaultActive: true },
   { id: 'quick', name: 'Quick Sort', complexity: 'O(n log n)', color: '#a855f7', defaultActive: true },
   { id: 'merge', name: 'Merge Sort', complexity: 'O(n log n)', color: '#06b6d4', defaultActive: true },
 ];
 
-const PRESET_SIZES = [1000, 5000, 10000, 25000];
+const SEARCH_ALGO_CONFIGS = [
+  { id: 'linear', name: 'Linear Search', complexity: 'O(n)', color: '#f59e0b', defaultActive: true },
+  { id: 'binary', name: 'Binary Search', complexity: 'O(log n)', color: '#10b981', defaultActive: true },
+];
+
+const PRESET_SORT_SIZES = [1000, 5000, 10000, 25000];
+const PRESET_SEARCH_SIZES = [100000, 500000, 1000000, 5000000];
 
 // Custom Minimalist Tooltip for Recharts
 function MinimalChartTooltip({ active, payload, label }) {
   if (!active || !payload || !payload.length) return null;
 
+  const numLabel = Number(label);
+  const formattedLabel = numLabel >= 1000000
+    ? `${(numLabel / 1000000).toFixed(1)}M`
+    : numLabel >= 1000
+    ? `${(numLabel / 1000).toLocaleString()}K`
+    : numLabel.toLocaleString();
+
   return (
     <div className="bg-theme-card border border-theme-border p-3 rounded-lg shadow-minimal text-xs font-mono">
       <div className="font-semibold text-theme-text mb-2 border-b border-theme-border pb-1">
-        Dataset: {Number(label).toLocaleString()} elements
+        Dataset: {formattedLabel} elements ({numLabel.toLocaleString()})
       </div>
       <div className="space-y-1.5">
         {payload.map((entry) => {
@@ -61,7 +76,7 @@ function MinimalChartTooltip({ active, payload, label }) {
                 </span>
               </span>
               <span className={`text-theme-text ${isTheory ? 'opacity-80' : 'font-bold'}`}>
-                {entry.value !== undefined ? `${entry.value.toFixed(2)} ms` : '-'}
+                {entry.value !== undefined ? `${entry.value.toFixed(4)} ms` : '-'}
               </span>
             </div>
           );
@@ -72,16 +87,18 @@ function MinimalChartTooltip({ active, payload, label }) {
 }
 
 export function BenchmarkLab() {
-  const [selectedAlgos, setSelectedAlgos] = useState(['bubble', 'quick', 'merge']);
-  const [sizes, setSizes] = useState(PRESET_SIZES);
+  const [benchmarkMode, setBenchmarkMode] = useState('sorting'); // 'sorting' | 'searching'
+  const [selectedSortAlgos, setSelectedSortAlgos] = useState(['bubble', 'quick', 'merge']);
+  const [selectedSearchAlgos, setSelectedSearchAlgos] = useState(['linear', 'binary']);
   const [isRunning, setIsRunning] = useState(false);
   const [showTheoryOverlay, setShowTheoryOverlay] = useState(true);
   const [progressInfo, setProgressInfo] = useState(null);
-  const [benchmarkResults, setBenchmarkResults] = useState(null);
+
+  const [sortResults, setSortResults] = useState(null);
+  const [searchResults, setSearchResults] = useState(null);
 
   const workerRef = useRef(null);
 
-  // Clean up worker on unmount
   useEffect(() => {
     return () => {
       if (workerRef.current) {
@@ -90,24 +107,36 @@ export function BenchmarkLab() {
     };
   }, []);
 
+  const activeAlgos = benchmarkMode === 'sorting' ? selectedSortAlgos : selectedSearchAlgos;
+  const currentRawResults = benchmarkMode === 'sorting' ? sortResults : searchResults;
+
   // Enrich data with theoretical curves when overlay is enabled
   const chartData = useMemo(() => {
-    if (!benchmarkResults) return null;
-    if (!showTheoryOverlay) return benchmarkResults;
-    return enrichDatasetWithTheory(benchmarkResults, selectedAlgos);
-  }, [benchmarkResults, showTheoryOverlay, selectedAlgos]);
+    if (!currentRawResults) return null;
+    if (!showTheoryOverlay) return currentRawResults;
+    return enrichDatasetWithTheory(currentRawResults, activeAlgos);
+  }, [currentRawResults, showTheoryOverlay, activeAlgos]);
 
-  const toggleAlgorithm = (algoId) => {
-    if (selectedAlgos.includes(algoId)) {
-      if (selectedAlgos.length === 1) return; // Keep at least one
-      setSelectedAlgos(selectedAlgos.filter((id) => id !== algoId));
+  const toggleSortAlgorithm = (algoId) => {
+    if (selectedSortAlgos.includes(algoId)) {
+      if (selectedSortAlgos.length === 1) return;
+      setSelectedSortAlgos(selectedSortAlgos.filter((id) => id !== algoId));
     } else {
-      setSelectedAlgos([...selectedAlgos, algoId]);
+      setSelectedSortAlgos([...selectedSortAlgos, algoId]);
+    }
+  };
+
+  const toggleSearchAlgorithm = (algoId) => {
+    if (selectedSearchAlgos.includes(algoId)) {
+      if (selectedSearchAlgos.length === 1) return;
+      setSelectedSearchAlgos(selectedSearchAlgos.filter((id) => id !== algoId));
+    } else {
+      setSelectedSearchAlgos([...selectedSearchAlgos, algoId]);
     }
   };
 
   const handleRunBenchmark = () => {
-    if (isRunning || !selectedAlgos.length) return;
+    if (isRunning) return;
 
     if (workerRef.current) {
       workerRef.current.terminate();
@@ -115,7 +144,7 @@ export function BenchmarkLab() {
 
     setIsRunning(true);
     setProgressInfo({
-      message: 'Initializing Web Worker & Warming up V8...',
+      message: `Initializing Web Worker & Prepping ${benchmarkMode.toUpperCase()} datasets...`,
       percent: 0
     });
 
@@ -131,14 +160,22 @@ export function BenchmarkLab() {
           message: data.message
         }));
       } else if (data.type === 'progress') {
+        const sizeFormatted = data.currentSize >= 1000000
+          ? `${(data.currentSize / 1000000).toFixed(1)}M`
+          : `${(data.currentSize / 1000).toLocaleString()}K`;
+
         setProgressInfo({
-          message: `Benchmarking ${data.currentAlgorithm.toUpperCase()} on N = ${data.currentSize.toLocaleString()}`,
+          message: `Benchmarking ${data.currentAlgorithm.toUpperCase()} on N = ${sizeFormatted}`,
           percent: data.progressPercent,
           currentSize: data.currentSize,
           currentAlgorithm: data.currentAlgorithm
         });
       } else if (data.type === 'done') {
-        setBenchmarkResults(data.results);
+        if (benchmarkMode === 'sorting') {
+          setSortResults(data.results);
+        } else {
+          setSearchResults(data.results);
+        }
         setIsRunning(false);
         setProgressInfo(null);
         worker.terminate();
@@ -154,30 +191,57 @@ export function BenchmarkLab() {
       workerRef.current = null;
     };
 
-    worker.postMessage({
-      algorithms: selectedAlgos,
-      sizes: sizes
-    });
+    // Dispatch job to Web Worker
+    if (benchmarkMode === 'sorting') {
+      worker.postMessage({
+        mode: 'sorting',
+        algorithms: selectedSortAlgos,
+        sizes: PRESET_SORT_SIZES
+      });
+    } else {
+      worker.postMessage({
+        mode: 'searching',
+        algorithms: selectedSearchAlgos,
+        sizes: PRESET_SEARCH_SIZES
+      });
+    }
   };
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      {/* Header & Architecture Explainer */}
+      {/* Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-theme-text font-sans">
-              Benchmarking Lab
-            </h1>
-            <span className="px-2 py-0.5 text-xs font-mono rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              Web Worker Offloaded
-            </span>
-            <span className="px-2 py-0.5 text-xs font-mono rounded bg-theme-surface border border-theme-border text-theme-accent">
-              V8 JIT Warmed
-            </span>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={() => setBenchmarkMode('sorting')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+                benchmarkMode === 'sorting'
+                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
+                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+              }`}
+            >
+              <ArrowDownUp className="w-3.5 h-3.5" />
+              <span>Sorting Race (1K – 25K)</span>
+            </button>
+
+            <button
+              onClick={() => setBenchmarkMode('searching')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+                benchmarkMode === 'searching'
+                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
+                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Searching Race (100K – 5M)</span>
+            </button>
           </div>
-          <p className="text-sm text-theme-text-muted mt-1">
-            Empirical runtime performance profiling using raw non-generator algorithms executed inside a dedicated browser background thread.
+
+          <p className="text-xs text-theme-text-muted mt-1">
+            {benchmarkMode === 'sorting'
+              ? 'Empirical runtime profiling comparing O(n²) quadratic vs O(n log n) divide-and-conquer sorting.'
+              : 'Empirical runtime comparison across massive contiguous arrays (up to 5,000,000 elements) proving O(n) vs O(log n).'}
           </p>
         </div>
 
@@ -201,31 +265,59 @@ export function BenchmarkLab() {
             <Layers className="w-3.5 h-3.5" />
             <span>Select Algorithms to Race:</span>
           </div>
+
           <div className="flex flex-wrap gap-2">
-            {ALGORITHM_CONFIGS.map((algo) => {
-              const isSelected = selectedAlgos.includes(algo.id);
-              return (
-                <button
-                  key={algo.id}
-                  onClick={() => toggleAlgorithm(algo.id)}
-                  disabled={isRunning}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
-                    isSelected
-                      ? 'bg-theme-card text-theme-text border-theme-primary shadow-subtle'
-                      : 'bg-theme-bg/60 text-theme-text-muted/60 border-theme-border hover:text-theme-text'
-                  } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: isSelected ? algo.color : '#64748b' }}
-                  />
-                  <span>{algo.name}</span>
-                  <span className="text-[10px] text-theme-text-muted opacity-70">
-                    {algo.complexity}
-                  </span>
-                </button>
-              );
-            })}
+            {benchmarkMode === 'sorting' ? (
+              SORT_ALGO_CONFIGS.map((algo) => {
+                const isSelected = selectedSortAlgos.includes(algo.id);
+                return (
+                  <button
+                    key={algo.id}
+                    onClick={() => toggleSortAlgorithm(algo.id)}
+                    disabled={isRunning}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
+                      isSelected
+                        ? 'bg-theme-card text-theme-text border-theme-primary shadow-subtle'
+                        : 'bg-theme-bg/60 text-theme-text-muted/60 border-theme-border hover:text-theme-text'
+                    } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: isSelected ? algo.color : '#64748b' }}
+                    />
+                    <span>{algo.name}</span>
+                    <span className="text-[10px] text-theme-text-muted opacity-70">
+                      {algo.complexity}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              SEARCH_ALGO_CONFIGS.map((algo) => {
+                const isSelected = selectedSearchAlgos.includes(algo.id);
+                return (
+                  <button
+                    key={algo.id}
+                    onClick={() => toggleSearchAlgorithm(algo.id)}
+                    disabled={isRunning}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
+                      isSelected
+                        ? 'bg-theme-card text-theme-text border-theme-primary shadow-subtle'
+                        : 'bg-theme-bg/60 text-theme-text-muted/60 border-theme-border hover:text-theme-text'
+                    } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: isSelected ? algo.color : '#64748b' }}
+                    />
+                    <span>{algo.name}</span>
+                    <span className="text-[10px] text-theme-text-muted opacity-70">
+                      {algo.complexity}
+                    </span>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -233,12 +325,14 @@ export function BenchmarkLab() {
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           <div className="hidden lg:flex items-center gap-1.5 text-xs font-mono text-theme-text-muted px-3 py-1.5 bg-theme-bg rounded-lg border border-theme-border">
             <span>Sizes:</span>
-            <span className="font-semibold text-theme-text">1K, 5K, 10K, 25K</span>
+            <span className="font-semibold text-theme-text">
+              {benchmarkMode === 'sorting' ? '1K, 5K, 10K, 25K' : '100K, 500K, 1M, 5M'}
+            </span>
           </div>
 
           <button
             onClick={handleRunBenchmark}
-            disabled={isRunning || !selectedAlgos.length}
+            disabled={isRunning || !activeAlgos.length}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-subtle ${
               isRunning
                 ? 'bg-amber-600/60 text-white cursor-wait'
@@ -253,7 +347,7 @@ export function BenchmarkLab() {
             ) : (
               <>
                 <Zap className="w-4 h-4 fill-current" />
-                <span>Run Benchmark</span>
+                <span>Run {benchmarkMode === 'sorting' ? 'Sorting' : 'Searching'} Benchmark</span>
               </>
             )}
           </button>
@@ -287,7 +381,9 @@ export function BenchmarkLab() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-theme-border pb-3">
           <div className="flex items-center gap-2 text-xs font-mono text-theme-text">
             <BarChart3 className="w-4 h-4 text-theme-primary" />
-            <span className="font-semibold">Execution Time vs Dataset Size (N)</span>
+            <span className="font-semibold">
+              {benchmarkMode === 'sorting' ? 'Sorting Performance' : 'Massive Array Searching Performance'}: Execution Time vs N
+            </span>
           </div>
 
           {/* Theory Overlay Toggle Switch */}
@@ -302,7 +398,7 @@ export function BenchmarkLab() {
               <span className="text-theme-text font-medium flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-theme-primary" />
                 <span>Show Theory Overlay</span>
-                <span className="text-[10px] text-theme-text-muted font-normal">(C·f(N) dotted)</span>
+                <span className="text-[10px] text-theme-text-muted font-normal">(C·f(N) dashed)</span>
               </span>
             </label>
 
@@ -324,7 +420,7 @@ export function BenchmarkLab() {
                   dataKey="size"
                   stroke="#94a3b8"
                   fontSize={11}
-                  tickFormatter={(val) => `${val / 1000}k`}
+                  tickFormatter={(val) => (val >= 1000000 ? `${val / 1000000}M` : `${val / 1000}k`)}
                   label={{
                     value: 'Array Size (N)',
                     position: 'insideBottom',
@@ -351,77 +447,133 @@ export function BenchmarkLab() {
                   wrapperStyle={{ paddingTop: 15, fontSize: 11, fontFamily: 'monospace' }}
                 />
 
-                {/* Empirical Physical Curves */}
-                {selectedAlgos.includes('bubble') && (
-                  <Line
-                    type="monotone"
-                    dataKey="bubble"
-                    name="Bubble Sort (Physical)"
-                    stroke="#f59e0b"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#f59e0b' }}
-                    activeDot={{ r: 7 }}
-                  />
-                )}
-                {selectedAlgos.includes('quick') && (
-                  <Line
-                    type="monotone"
-                    dataKey="quick"
-                    name="Quick Sort (Physical)"
-                    stroke="#a855f7"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#a855f7' }}
-                    activeDot={{ r: 7 }}
-                  />
-                )}
-                {selectedAlgos.includes('merge') && (
-                  <Line
-                    type="monotone"
-                    dataKey="merge"
-                    name="Merge Sort (Physical)"
-                    stroke="#06b6d4"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#06b6d4' }}
-                    activeDot={{ r: 7 }}
-                  />
+                {/* Sorting Curves */}
+                {benchmarkMode === 'sorting' && (
+                  <>
+                    {selectedSortAlgos.includes('bubble') && (
+                      <Line
+                        type="monotone"
+                        dataKey="bubble"
+                        name="Bubble Sort (Physical)"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#f59e0b' }}
+                        activeDot={{ r: 7 }}
+                      />
+                    )}
+                    {selectedSortAlgos.includes('quick') && (
+                      <Line
+                        type="monotone"
+                        dataKey="quick"
+                        name="Quick Sort (Physical)"
+                        stroke="#a855f7"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#a855f7' }}
+                        activeDot={{ r: 7 }}
+                      />
+                    )}
+                    {selectedSortAlgos.includes('merge') && (
+                      <Line
+                        type="monotone"
+                        dataKey="merge"
+                        name="Merge Sort (Physical)"
+                        stroke="#06b6d4"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#06b6d4' }}
+                        activeDot={{ r: 7 }}
+                      />
+                    )}
+
+                    {showTheoryOverlay && selectedSortAlgos.includes('bubble') && (
+                      <Line
+                        type="monotone"
+                        dataKey="bubble_theory"
+                        name="Bubble Theory: O(n²)"
+                        stroke="#f59e0b"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.8}
+                        strokeOpacity={0.6}
+                        dot={false}
+                      />
+                    )}
+                    {showTheoryOverlay && selectedSortAlgos.includes('quick') && (
+                      <Line
+                        type="monotone"
+                        dataKey="quick_theory"
+                        name="Quick Theory: O(n log n)"
+                        stroke="#a855f7"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.8}
+                        strokeOpacity={0.6}
+                        dot={false}
+                      />
+                    )}
+                    {showTheoryOverlay && selectedSortAlgos.includes('merge') && (
+                      <Line
+                        type="monotone"
+                        dataKey="merge_theory"
+                        name="Merge Theory: O(n log n)"
+                        stroke="#06b6d4"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.8}
+                        strokeOpacity={0.6}
+                        dot={false}
+                      />
+                    )}
+                  </>
                 )}
 
-                {/* Theoretical Scaled Overlays (Dashed lines, opacity 0.6) */}
-                {showTheoryOverlay && selectedAlgos.includes('bubble') && (
-                  <Line
-                    type="monotone"
-                    dataKey="bubble_theory"
-                    name="Bubble Theory: O(n²)"
-                    stroke="#f59e0b"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.8}
-                    strokeOpacity={0.6}
-                    dot={false}
-                  />
-                )}
-                {showTheoryOverlay && selectedAlgos.includes('quick') && (
-                  <Line
-                    type="monotone"
-                    dataKey="quick_theory"
-                    name="Quick Theory: O(n log n)"
-                    stroke="#a855f7"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.8}
-                    strokeOpacity={0.6}
-                    dot={false}
-                  />
-                )}
-                {showTheoryOverlay && selectedAlgos.includes('merge') && (
-                  <Line
-                    type="monotone"
-                    dataKey="merge_theory"
-                    name="Merge Theory: O(n log n)"
-                    stroke="#06b6d4"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.8}
-                    strokeOpacity={0.6}
-                    dot={false}
-                  />
+                {/* Searching Curves */}
+                {benchmarkMode === 'searching' && (
+                  <>
+                    {selectedSearchAlgos.includes('linear') && (
+                      <Line
+                        type="monotone"
+                        dataKey="linear"
+                        name="Linear Search (Physical O(N))"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#f59e0b' }}
+                        activeDot={{ r: 7 }}
+                      />
+                    )}
+                    {selectedSearchAlgos.includes('binary') && (
+                      <Line
+                        type="monotone"
+                        dataKey="binary"
+                        name="Binary Search (Physical O(log N))"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#10b981' }}
+                        activeDot={{ r: 7 }}
+                      />
+                    )}
+
+                    {showTheoryOverlay && selectedSearchAlgos.includes('linear') && (
+                      <Line
+                        type="monotone"
+                        dataKey="linear_theory"
+                        name="Linear Theory: O(n)"
+                        stroke="#f59e0b"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.8}
+                        strokeOpacity={0.6}
+                        dot={false}
+                      />
+                    )}
+                    {showTheoryOverlay && selectedSearchAlgos.includes('binary') && (
+                      <Line
+                        type="monotone"
+                        dataKey="binary_theory"
+                        name="Binary Theory: O(log n)"
+                        stroke="#10b981"
+                        strokeDasharray="5 5"
+                        strokeWidth={1.8}
+                        strokeOpacity={0.6}
+                        dot={false}
+                      />
+                    )}
+                  </>
                 )}
               </LineChart>
             </ResponsiveContainer>
@@ -432,21 +584,21 @@ export function BenchmarkLab() {
               <Zap className="w-6 h-6" />
             </div>
             <div className="text-sm font-semibold text-theme-text font-sans">
-              No Benchmark Data Generated Yet
+              No {benchmarkMode === 'sorting' ? 'Sorting' : 'Searching'} Benchmark Data Generated Yet
             </div>
             <p className="text-xs font-mono max-w-md">
-              Click &quot;Run Benchmark&quot; above to spawn the Web Worker, generate datasets from 1,000 to 25,000 elements, and measure real execution times with theoretical curve-fitting.
+              Click &quot;Run {benchmarkMode === 'sorting' ? 'Sorting' : 'Searching'} Benchmark&quot; to spawn the Web Worker and evaluate runtime execution times.
             </p>
           </div>
         )}
       </div>
 
       {/* Summary Empirical Performance Table */}
-      {benchmarkResults && (
+      {currentRawResults && (
         <div className="bg-theme-surface rounded-xl border border-theme-border p-5 shadow-subtle space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-mono uppercase tracking-wider font-semibold text-theme-text">
-              Empirical Results Table
+              Empirical {benchmarkMode === 'sorting' ? 'Sorting' : 'Searching'} Results Table
             </h3>
             <span className="text-[10px] font-mono text-emerald-400">
               Measured via performance.now()
@@ -458,18 +610,32 @@ export function BenchmarkLab() {
               <thead>
                 <tr className="border-b border-theme-border text-theme-text-muted">
                   <th className="py-2.5 px-3">Size (N)</th>
-                  {selectedAlgos.includes('bubble') && <th className="py-2.5 px-3">Bubble Sort (ms)</th>}
-                  {selectedAlgos.includes('quick') && <th className="py-2.5 px-3">Quick Sort (ms)</th>}
-                  {selectedAlgos.includes('merge') && <th className="py-2.5 px-3">Merge Sort (ms)</th>}
+                  {benchmarkMode === 'sorting' ? (
+                    <>
+                      {selectedSortAlgos.includes('bubble') && <th className="py-2.5 px-3">Bubble Sort (ms)</th>}
+                      {selectedSortAlgos.includes('quick') && <th className="py-2.5 px-3">Quick Sort (ms)</th>}
+                      {selectedSortAlgos.includes('merge') && <th className="py-2.5 px-3">Merge Sort (ms)</th>}
+                    </>
+                  ) : (
+                    <>
+                      {selectedSearchAlgos.includes('linear') && <th className="py-2.5 px-3">Linear Search (ms)</th>}
+                      {selectedSearchAlgos.includes('binary') && <th className="py-2.5 px-3">Binary Search (ms)</th>}
+                    </>
+                  )}
                   <th className="py-2.5 px-3 text-right">Fastest</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border">
-                {benchmarkResults.map((row) => {
+                {currentRawResults.map((row) => {
                   const times = [];
-                  if (row.bubble !== undefined) times.push({ name: 'Bubble', val: row.bubble });
-                  if (row.quick !== undefined) times.push({ name: 'Quick', val: row.quick });
-                  if (row.merge !== undefined) times.push({ name: 'Merge', val: row.merge });
+                  if (benchmarkMode === 'sorting') {
+                    if (row.bubble !== undefined) times.push({ name: 'Bubble', val: row.bubble });
+                    if (row.quick !== undefined) times.push({ name: 'Quick', val: row.quick });
+                    if (row.merge !== undefined) times.push({ name: 'Merge', val: row.merge });
+                  } else {
+                    if (row.linear !== undefined) times.push({ name: 'Linear', val: row.linear });
+                    if (row.binary !== undefined) times.push({ name: 'Binary', val: row.binary });
+                  }
                   times.sort((a, b) => a.val - b.val);
                   const fastest = times[0];
 
@@ -478,20 +644,37 @@ export function BenchmarkLab() {
                       <td className="py-2.5 px-3 font-semibold text-theme-text">
                         {row.size.toLocaleString()}
                       </td>
-                      {selectedAlgos.includes('bubble') && (
-                        <td className="py-2.5 px-3 text-amber-400">
-                          {row.bubble !== undefined ? `${row.bubble.toFixed(2)} ms` : '-'}
-                        </td>
-                      )}
-                      {selectedAlgos.includes('quick') && (
-                        <td className="py-2.5 px-3 text-purple-400">
-                          {row.quick !== undefined ? `${row.quick.toFixed(2)} ms` : '-'}
-                        </td>
-                      )}
-                      {selectedAlgos.includes('merge') && (
-                        <td className="py-2.5 px-3 text-cyan-300">
-                          {row.merge !== undefined ? `${row.merge.toFixed(2)} ms` : '-'}
-                        </td>
+                      {benchmarkMode === 'sorting' ? (
+                        <>
+                          {selectedSortAlgos.includes('bubble') && (
+                            <td className="py-2.5 px-3 text-amber-400">
+                              {row.bubble !== undefined ? `${row.bubble.toFixed(2)} ms` : '-'}
+                            </td>
+                          )}
+                          {selectedSortAlgos.includes('quick') && (
+                            <td className="py-2.5 px-3 text-purple-400">
+                              {row.quick !== undefined ? `${row.quick.toFixed(2)} ms` : '-'}
+                            </td>
+                          )}
+                          {selectedSortAlgos.includes('merge') && (
+                            <td className="py-2.5 px-3 text-cyan-300">
+                              {row.merge !== undefined ? `${row.merge.toFixed(2)} ms` : '-'}
+                            </td>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {selectedSearchAlgos.includes('linear') && (
+                            <td className="py-2.5 px-3 text-amber-400">
+                              {row.linear !== undefined ? `${row.linear.toFixed(4)} ms` : '-'}
+                            </td>
+                          )}
+                          {selectedSearchAlgos.includes('binary') && (
+                            <td className="py-2.5 px-3 text-emerald-400 font-bold">
+                              {row.binary !== undefined ? `${row.binary.toFixed(4)} ms` : '-'}
+                            </td>
+                          )}
+                        </>
                       )}
                       <td className="py-2.5 px-3 text-right">
                         <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">

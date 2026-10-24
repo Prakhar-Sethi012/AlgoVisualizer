@@ -12,7 +12,10 @@ import {
   BarChart3,
   Sliders,
   Zap,
-  Play
+  Play,
+  Layers,
+  Calculator,
+  Box
 } from 'lucide-react';
 
 export const ALGORITHM_CATEGORIES = [
@@ -33,8 +36,17 @@ export const ALGORITHM_CATEGORIES = [
     name: 'Searching',
     icon: Search,
     algorithms: [
-      { id: 'binary-search', name: 'Binary Search', implemented: false, tag: 'Next Phase' },
-      { id: 'linear-search', name: 'Linear Search', implemented: false, tag: 'Next Phase' },
+      { id: 'linear-search', name: 'Linear Search', implemented: true, tag: 'O(n)' },
+      { id: 'binary-search', name: 'Binary Search', implemented: true, tag: 'O(log n)' },
+    ]
+  },
+  {
+    id: 'data-structures',
+    name: 'Data Structures',
+    icon: Layers,
+    algorithms: [
+      { id: 'stack', name: 'Stack (LIFO)', implemented: true, tag: 'LIFO' },
+      { id: 'queue', name: 'Queue (FIFO)', implemented: true, tag: 'FIFO' },
     ]
   },
   {
@@ -71,6 +83,8 @@ export function Navigation({
   onViewChange,
   selectedAlgo,
   onSelectAlgo,
+  selectedDS = 'stack',
+  onSelectDS,
   currentTheme,
   onThemeChange
 }) {
@@ -97,7 +111,7 @@ export function Navigation({
       <div className="p-3 border-b border-theme-border space-y-1 bg-theme-bg/30">
         <button
           onClick={() => onViewChange && onViewChange('visualizer')}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'visualizer'
               ? 'bg-theme-primary text-slate-950 shadow-subtle'
               : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
@@ -113,8 +127,27 @@ export function Navigation({
         </button>
 
         <button
+          onClick={() => onViewChange && onViewChange('data-structures')}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'data-structures'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Box className="w-3.5 h-3.5" />
+            <span>Stack & Queue</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'data-structures' ? 'bg-black/10' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+          }`}>
+            AnimatePresence
+          </span>
+        </button>
+
+        <button
           onClick={() => onViewChange && onViewChange('benchmark')}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'benchmark'
               ? 'bg-theme-primary text-slate-950 shadow-subtle'
               : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
@@ -133,7 +166,7 @@ export function Navigation({
 
         <button
           onClick={() => onViewChange && onViewChange('recurrence')}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'recurrence'
               ? 'bg-theme-primary text-slate-950 shadow-subtle'
               : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
@@ -168,14 +201,23 @@ export function Navigation({
 
               <div className="space-y-0.5">
                 {category.algorithms.map((algo) => {
-                  const isSelected = currentView === 'visualizer' && selectedAlgo === algo.id;
+                  const isDS = category.id === 'data-structures';
+                  const isSelected = isDS
+                    ? currentView === 'data-structures' && selectedDS === algo.id
+                    : currentView === 'visualizer' && selectedAlgo === algo.id;
+
                   return (
                     <button
                       key={algo.id}
                       onClick={() => {
                         if (algo.implemented) {
-                          if (onViewChange) onViewChange('visualizer');
-                          if (onSelectAlgo) onSelectAlgo(algo.id);
+                          if (isDS) {
+                            if (onViewChange) onViewChange('data-structures');
+                            if (onSelectDS) onSelectDS(algo.id);
+                          } else {
+                            if (onViewChange) onViewChange('visualizer');
+                            if (onSelectAlgo) onSelectAlgo(algo.id);
+                          }
                         }
                       }}
                       disabled={!algo.implemented}
@@ -232,8 +274,8 @@ export function Navigation({
           ))}
         </select>
         <div className="mt-2 text-[10px] text-theme-text-muted font-mono px-1 flex items-center justify-between">
-          <span>Worker Threads:</span>
-          <span className="text-emerald-400">Dedicated Worker</span>
+          <span>Visualizer Core:</span>
+          <span className="text-emerald-400">Generator + Worker</span>
         </div>
       </div>
     </aside>

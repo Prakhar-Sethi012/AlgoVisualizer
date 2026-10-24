@@ -1,0 +1,168 @@
+import React from 'react';
+import {
+  ArrowDownUp,
+  Search,
+  Network,
+  GitFork,
+  Palette,
+  Terminal,
+  Activity,
+  CheckCircle2,
+  Lock
+} from 'lucide-react';
+
+export const ALGORITHM_CATEGORIES = [
+  {
+    id: 'sorting',
+    name: 'Sorting',
+    icon: ArrowDownUp,
+    algorithms: [
+      { id: 'bubble-sort', name: 'Bubble Sort', implemented: true, tag: 'Generator' },
+      { id: 'selection-sort', name: 'Selection Sort', implemented: false, tag: 'Next Phase' },
+      { id: 'insertion-sort', name: 'Insertion Sort', implemented: false, tag: 'Next Phase' },
+      { id: 'merge-sort', name: 'Merge Sort', implemented: false, tag: 'Next Phase' },
+      { id: 'quick-sort', name: 'Quick Sort', implemented: false, tag: 'Next Phase' },
+    ]
+  },
+  {
+    id: 'searching',
+    name: 'Searching',
+    icon: Search,
+    algorithms: [
+      { id: 'binary-search', name: 'Binary Search', implemented: false, tag: 'Next Phase' },
+      { id: 'linear-search', name: 'Linear Search', implemented: false, tag: 'Next Phase' },
+    ]
+  },
+  {
+    id: 'trees',
+    name: 'Trees',
+    icon: GitFork,
+    algorithms: [
+      { id: 'bst-operations', name: 'BST Operations', implemented: false, tag: 'Next Phase' },
+      { id: 'tree-traversal', name: 'In/Pre/Post Order', implemented: false, tag: 'Next Phase' },
+    ]
+  },
+  {
+    id: 'graphs',
+    name: 'Graphs',
+    icon: Network,
+    algorithms: [
+      { id: 'bfs', name: 'Breadth-First Search', implemented: false, tag: 'Next Phase' },
+      { id: 'dfs', name: 'Depth-First Search', implemented: false, tag: 'Next Phase' },
+      { id: 'dijkstra', name: "Dijkstra's Shortest Path", implemented: false, tag: 'Next Phase' },
+    ]
+  }
+];
+
+export const AVAILABLE_THEMES = [
+  { id: 'default', name: 'Modern Minimalist (Dark)', hex: '#36454f' },
+  { id: 'modern-minimalist-light', name: 'Modern Minimalist (Light)', hex: '#d3d3d3' },
+  { id: 'ocean-depths', name: 'Ocean Depths', hex: '#2d8b8b' },
+  { id: 'tech-innovation', name: 'Tech Innovation', hex: '#0066ff' },
+  { id: 'arctic-frost', name: 'Arctic Frost', hex: '#4a6fa5' },
+];
+
+export function Navigation({
+  selectedAlgo,
+  onSelectAlgo,
+  currentTheme,
+  onThemeChange
+}) {
+  return (
+    <aside className="w-64 bg-theme-surface border-r border-theme-border flex flex-col h-full flex-shrink-0 select-none">
+      {/* Brand Header */}
+      <div className="p-4 border-b border-theme-border flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-theme-primary/10 border border-theme-primary/30 flex items-center justify-center text-theme-primary">
+            <Activity className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-sm font-bold tracking-tight text-theme-text font-sans leading-none">
+              AlgoVisualizer
+            </div>
+            <div className="text-[10px] font-mono text-theme-text-muted mt-1">
+              Lab & Benchmarking
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Groups */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-5">
+        {ALGORITHM_CATEGORIES.map((category) => {
+          const CategoryIcon = category.icon;
+          return (
+            <div key={category.id} className="space-y-1">
+              <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-theme-text-muted uppercase tracking-wider font-mono">
+                <CategoryIcon className="w-3.5 h-3.5" />
+                <span>{category.name}</span>
+              </div>
+
+              <div className="space-y-0.5">
+                {category.algorithms.map((algo) => {
+                  const isSelected = selectedAlgo === algo.id;
+                  return (
+                    <button
+                      key={algo.id}
+                      onClick={() => algo.implemented && onSelectAlgo(algo.id)}
+                      disabled={!algo.implemented}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        isSelected
+                          ? 'bg-theme-primary/15 text-theme-primary font-semibold'
+                          : algo.implemented
+                          ? 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+                          : 'text-theme-text-muted/50 cursor-not-allowed hover:bg-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        {algo.implemented ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-theme-primary" />
+                        ) : (
+                          <Lock className="w-3 h-3 text-theme-text-muted/40" />
+                        )}
+                        <span className="truncate">{algo.name}</span>
+                      </div>
+
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                          algo.implemented
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : 'bg-theme-surface border border-theme-border text-theme-text-muted/60'
+                        }`}
+                      >
+                        {algo.tag}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Theme Selector (Dynamic Theming from secret_folder) */}
+      <div className="p-3 border-t border-theme-border bg-theme-card/50">
+        <div className="flex items-center gap-1.5 px-1 mb-2 text-xs font-mono text-theme-text-muted">
+          <Palette className="w-3.5 h-3.5" />
+          <span>Dynamic Theme</span>
+        </div>
+        <select
+          value={currentTheme}
+          onChange={(e) => onThemeChange(e.target.value)}
+          className="w-full text-xs bg-theme-surface border border-theme-border rounded-md px-2.5 py-1.5 text-theme-text focus:outline-none focus:ring-1 focus:ring-theme-primary font-mono cursor-pointer"
+        >
+          {AVAILABLE_THEMES.map((t) => (
+            <option key={t.id} value={t.id} className="bg-slate-900 text-white">
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <div className="mt-2 text-[10px] text-theme-text-muted font-mono px-1 flex items-center justify-between">
+          <span>Engine:</span>
+          <span className="text-emerald-400">Generator (yield*)</span>
+        </div>
+      </div>
+    </aside>
+  );
+}

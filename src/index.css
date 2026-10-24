@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Default Theme: Modern Minimalist (extracted from secret_folder/themes/modern-minimalist.md) */
+  --color-bg: #0f1418;
+  --color-surface: #182026;
+  --color-surface-hover: #222d35;
+  --color-card: #1c252d;
+  --color-border: #36454f; /* Charcoal from modern-minimalist */
+  --color-border-subtle: #25313a;
+  --color-text: #f8fafc;
+  --color-text-muted: #8b9baa; /* Slate tone */
+  --color-primary: #38bdf8;
+  --color-primary-hover: #0ea5e9;
+  --color-accent: #708090; /* Slate Gray from modern-minimalist */
+  --color-highlight: #d3d3d3; /* Light Gray from modern-minimalist */
+
+  /* Algorithmic Visualization States */
+  --color-algo-default: #475569;
+  --color-algo-comparing: #f59e0b; /* Amber warning: comparing */
+  --color-algo-swapped: #ef4444;   /* Coral red: swapped */
+  --color-algo-sorted: #10b981;    /* Emerald: sorted in place */
+  --color-algo-pivot: #8b5cf6;     /* Purple: pivot/target */
+}
+
+/* Light Mode Modern Minimalist */
+[data-theme="modern-minimalist-light"] {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-card: #ffffff;
+  --color-border: #d3d3d3; /* Light Gray */
+  --color-border-subtle: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-muted: #708090; /* Slate Gray */
+  --color-primary: #36454f; /* Charcoal */
+  --color-primary-hover: #1e293b;
+  --color-accent: #708090;
+  --color-highlight: #36454f;
+
+  --color-algo-default: #94a3b8;
+  --color-algo-comparing: #d97706;
+  --color-algo-swapped: #dc2626;
+  --color-algo-sorted: #059669;
+  --color-algo-pivot: #7c3aed;
+}
+
+/* Ocean Depths Theme (from secret_folder/themes/ocean-depths.md) */
+[data-theme="ocean-depths"] {
+  --color-bg: #0f1620;
+  --color-surface: #1a2332; /* Deep Navy */
+  --color-surface-hover: #223044;
+  --color-card: #1f2b3e;
+  --color-border: #2a3a50;
+  --color-border-subtle: #1c2738;
+  --color-text: #f1faee; /* Cream */
+  --color-text-muted: #8ea8bf;
+  --color-primary: #2d8b8b; /* Teal */
+  --color-primary-hover: #37a3a3;
+  --color-accent: #a8dadc; /* Seafoam */
+  --color-highlight: #a8dadc;
+
+  --color-algo-default: #3b5370;
+  --color-algo-comparing: #f59e0b;
+  --color-algo-swapped: #e63946;
+  --color-algo-sorted: #2d8b8b;
+  --color-algo-pivot: #a8dadc;
+}
+
+/* Tech Innovation Theme (from secret_folder/themes/tech-innovation.md) */
+[data-theme="tech-innovation"] {
+  --color-bg: #121212;
+  --color-surface: #1e1e1e; /* Dark Gray */
+  --color-surface-hover: #292929;
+  --color-card: #222222;
+  --color-border: #333333;
+  --color-border-subtle: #242424;
+  --color-text: #ffffff; /* White */
+  --color-text-muted: #9e9e9e;
+  --color-primary: #0066ff; /* Electric Blue */
+  --color-primary-hover: #1a75ff;
+  --color-accent: #00ffff; /* Neon Cyan */
+  --color-highlight: #00ffff;
+
+  --color-algo-default: #3f3f46;
+  --color-algo-comparing: #f59e0b;
+  --color-algo-swapped: #ef4444;
+  --color-algo-sorted: #00ffff;
+  --color-algo-pivot: #0066ff;
+}
+
+/* Arctic Frost Theme (from secret_folder/themes/arctic-frost.md) */
+[data-theme="arctic-frost"] {
+  --color-bg: #0b1118;
+  --color-surface: #131c26;
+  --color-surface-hover: #1c2837;
+  --color-card: #17222f;
+  --color-border: #25364a;
+  --color-border-subtle: #182433;
+  --color-text: #fafafa; /* Crisp White */
+  --color-text-muted: #c0c0c0; /* Silver */
+  --color-primary: #4a6fa5; /* Steel Blue */
+  --color-primary-hover: #5d84be;
+  --color-accent: #d4e4f7; /* Ice Blue */
+  --color-highlight: #d4e4f7;
+
+  --color-algo-default: #384c66;
+  --color-algo-comparing: #f59e0b;
+  --color-algo-swapped: #f43f5e;
+  --color-algo-sorted: #34d399;
+  --color-algo-pivot: #d4e4f7;
+}
+
+/* Global Polish */
+* {
+  border-color: var(--color-border-subtle);
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  overflow-x: hidden;
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}

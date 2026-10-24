@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -20,9 +20,11 @@ import {
   Activity,
   Layers,
   Sparkles,
-  Info
+  Info,
+  TrendingUp
 } from 'lucide-react';
 import BenchmarkWorker from '../workers/benchmark.worker.js?worker';
+import { enrichDatasetWithTheory } from '../core/math/curveFitter';
 
 const ALGORITHM_CONFIGS = [
   { id: 'bubble', name: 'Bubble Sort', complexity: 'O(n²)', color: '#f59e0b', defaultActive: true },
@@ -41,16 +43,29 @@ function MinimalChartTooltip({ active, payload, label }) {
       <div className="font-semibold text-theme-text mb-2 border-b border-theme-border pb-1">
         Dataset: {Number(label).toLocaleString()} elements
       </div>
-      <div className="space-y-1">
-        {payload.map((entry) => (
-          <div key={entry.name} className="flex items-center justify-between gap-4">
-            <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              {entry.name}:
-            </span>
-            <span className="font-bold text-theme-text">{entry.value.toFixed(2)} ms</span>
-          </div>
-        ))}
+      <div className="space-y-1.5">
+        {payload.map((entry) => {
+          const isTheory = entry.dataKey.includes('theory');
+          return (
+            <div key={entry.name} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{
+                    backgroundColor: entry.color,
+                    opacity: isTheory ? 0.6 : 1
+                  }}
+                />
+                <span className={isTheory ? 'italic opacity-80' : 'font-medium'}>
+                  {entry.name}:
+                </span>
+              </span>
+              <span className={`text-theme-text ${isTheory ? 'opacity-80' : 'font-bold'}`}>
+                {entry.value !== undefined ? `${entry.value.toFixed(2)} ms` : '-'}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -60,6 +75,7 @@ export function BenchmarkLab() {
   const [selectedAlgos, setSelectedAlgos] = useState(['bubble', 'quick', 'merge']);
   const [sizes, setSizes] = useState(PRESET_SIZES);
   const [isRunning, setIsRunning] = useState(false);
+  const [showTheoryOverlay, setShowTheoryOverlay] = useState(true);
   const [progressInfo, setProgressInfo] = useState(null);
   const [benchmarkResults, setBenchmarkResults] = useState(null);
 
@@ -74,6 +90,13 @@ export function BenchmarkLab() {
     };
   }, []);
 
+  // Enrich data with theoretical curves when overlay is enabled
+  const chartData = useMemo(() => {
+    if (!benchmarkResults) return null;
+    if (!showTheoryOverlay) return benchmarkResults;
+    return enrichDatasetWithTheory(benchmarkResults, selectedAlgos);
+  }, [benchmarkResults, showTheoryOverlay, selectedAlgos]);
+
   const toggleAlgorithm = (algoId) => {
     if (selectedAlgos.includes(algoId)) {
       if (selectedAlgos.length === 1) return; // Keep at least one
@@ -86,7 +109,6 @@ export function BenchmarkLab() {
   const handleRunBenchmark = () => {
     if (isRunning || !selectedAlgos.length) return;
 
-    // Terminate any previous worker instance
     if (workerRef.current) {
       workerRef.current.terminate();
     }
@@ -97,7 +119,6 @@ export function BenchmarkLab() {
       percent: 0
     });
 
-    // Instantiate fresh Web Worker via Vite worker import
     const worker = new BenchmarkWorker();
     workerRef.current = worker;
 
@@ -133,7 +154,6 @@ export function BenchmarkLab() {
       workerRef.current = null;
     };
 
-    // Dispatch job to worker
     worker.postMessage({
       algorithms: selectedAlgos,
       sizes: sizes
@@ -264,21 +284,39 @@ export function BenchmarkLab() {
 
       {/* Chart Canvas Area */}
       <div className="flex-1 min-h-[420px] bg-theme-surface rounded-xl border border-theme-border p-6 flex flex-col shadow-subtle relative">
-        <div className="flex items-center justify-between mb-4 border-b border-theme-border pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 border-b border-theme-border pb-3">
           <div className="flex items-center gap-2 text-xs font-mono text-theme-text">
             <BarChart3 className="w-4 h-4 text-theme-primary" />
             <span className="font-semibold">Execution Time vs Dataset Size (N)</span>
           </div>
-          <div className="text-xs font-mono text-theme-text-muted">
-            Y: Time (Milliseconds) · X: Dataset Size (Elements)
+
+          {/* Theory Overlay Toggle Switch */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs font-mono cursor-pointer select-none px-2.5 py-1 rounded bg-theme-card border border-theme-border hover:border-theme-primary/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={showTheoryOverlay}
+                onChange={(e) => setShowTheoryOverlay(e.target.checked)}
+                className="w-3.5 h-3.5 accent-theme-primary cursor-pointer rounded"
+              />
+              <span className="text-theme-text font-medium flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-theme-primary" />
+                <span>Show Theory Overlay</span>
+                <span className="text-[10px] text-theme-text-muted font-normal">(C·f(N) dotted)</span>
+              </span>
+            </label>
+
+            <div className="hidden md:block text-xs font-mono text-theme-text-muted">
+              Y: Time (ms) · X: Size (N)
+            </div>
           </div>
         </div>
 
-        {benchmarkResults ? (
+        {chartData ? (
           <div className="w-full h-[320px] pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={benchmarkResults}
+                data={chartData}
                 margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
@@ -310,14 +348,15 @@ export function BenchmarkLab() {
                 />
                 <Tooltip content={<MinimalChartTooltip />} />
                 <Legend
-                  wrapperStyle={{ paddingTop: 15, fontSize: 12, fontFamily: 'monospace' }}
+                  wrapperStyle={{ paddingTop: 15, fontSize: 11, fontFamily: 'monospace' }}
                 />
 
+                {/* Empirical Physical Curves */}
                 {selectedAlgos.includes('bubble') && (
                   <Line
                     type="monotone"
                     dataKey="bubble"
-                    name="Bubble Sort O(n²)"
+                    name="Bubble Sort (Physical)"
                     stroke="#f59e0b"
                     strokeWidth={2.5}
                     dot={{ r: 4, fill: '#f59e0b' }}
@@ -328,7 +367,7 @@ export function BenchmarkLab() {
                   <Line
                     type="monotone"
                     dataKey="quick"
-                    name="Quick Sort O(n log n)"
+                    name="Quick Sort (Physical)"
                     stroke="#a855f7"
                     strokeWidth={2.5}
                     dot={{ r: 4, fill: '#a855f7' }}
@@ -339,11 +378,49 @@ export function BenchmarkLab() {
                   <Line
                     type="monotone"
                     dataKey="merge"
-                    name="Merge Sort O(n log n)"
+                    name="Merge Sort (Physical)"
                     stroke="#06b6d4"
                     strokeWidth={2.5}
                     dot={{ r: 4, fill: '#06b6d4' }}
                     activeDot={{ r: 7 }}
+                  />
+                )}
+
+                {/* Theoretical Scaled Overlays (Dashed lines, opacity 0.6) */}
+                {showTheoryOverlay && selectedAlgos.includes('bubble') && (
+                  <Line
+                    type="monotone"
+                    dataKey="bubble_theory"
+                    name="Bubble Theory: O(n²)"
+                    stroke="#f59e0b"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.8}
+                    strokeOpacity={0.6}
+                    dot={false}
+                  />
+                )}
+                {showTheoryOverlay && selectedAlgos.includes('quick') && (
+                  <Line
+                    type="monotone"
+                    dataKey="quick_theory"
+                    name="Quick Theory: O(n log n)"
+                    stroke="#a855f7"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.8}
+                    strokeOpacity={0.6}
+                    dot={false}
+                  />
+                )}
+                {showTheoryOverlay && selectedAlgos.includes('merge') && (
+                  <Line
+                    type="monotone"
+                    dataKey="merge_theory"
+                    name="Merge Theory: O(n log n)"
+                    stroke="#06b6d4"
+                    strokeDasharray="5 5"
+                    strokeWidth={1.8}
+                    strokeOpacity={0.6}
+                    dot={false}
                   />
                 )}
               </LineChart>
@@ -358,7 +435,7 @@ export function BenchmarkLab() {
               No Benchmark Data Generated Yet
             </div>
             <p className="text-xs font-mono max-w-md">
-              Click &quot;Run Benchmark&quot; above to spawn the Web Worker, generate datasets from 1,000 to 25,000 elements, and measure real execution times.
+              Click &quot;Run Benchmark&quot; above to spawn the Web Worker, generate datasets from 1,000 to 25,000 elements, and measure real execution times with theoretical curve-fitting.
             </p>
           </div>
         )}
@@ -389,7 +466,6 @@ export function BenchmarkLab() {
               </thead>
               <tbody className="divide-y divide-theme-border">
                 {benchmarkResults.map((row) => {
-                  // Determine fastest algorithm for this row
                   const times = [];
                   if (row.bubble !== undefined) times.push({ name: 'Bubble', val: row.bubble });
                   if (row.quick !== undefined) times.push({ name: 'Quick', val: row.quick });

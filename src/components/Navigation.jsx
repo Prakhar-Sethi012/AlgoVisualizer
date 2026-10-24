@@ -130,6 +130,25 @@ export function Navigation({
             Web Worker
           </span>
         </button>
+
+        <button
+          onClick={() => onViewChange && onViewChange('recurrence')}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'recurrence'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Recurrence Solver</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'recurrence' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+          }`}>
+            Master Thm
+          </span>
+        </button>
       </div>
 
       {/* Navigation Groups for Algorithms */}

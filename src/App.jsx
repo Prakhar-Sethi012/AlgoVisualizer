@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { VisualizerView } from './components/VisualizerView';
 import { BenchmarkLab } from './components/BenchmarkLab';
-import { Cpu, Play, Zap, Menu, X } from 'lucide-react';
+import { MathLab } from './components/MathLab';
+import { Cpu, Play, Zap, Calculator, Menu, X } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'benchmark'
+  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -76,18 +77,20 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 2 Active
+                Phase 3 Active
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
                 {currentView === 'benchmark'
-                  ? '/ Benchmarking Lab (Web Worker Offloaded)'
+                  ? '/ Benchmarking Lab (Theory Overlay Enabled)'
+                  : currentView === 'recurrence'
+                  ? '/ Recurrence Solver (Master Theorem Engine)'
                   : `/ Sorting / ${selectedAlgo === 'bubble-sort' ? 'Bubble Sort' : selectedAlgo === 'quick-sort' ? 'Quick Sort' : 'Merge Sort'}`}
               </span>
             </div>
           </div>
 
           {/* Quick Header View Toggle Switch */}
-          <div className="flex items-center gap-2 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono">
             <button
               onClick={() => setCurrentView('visualizer')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
@@ -108,7 +111,18 @@ export default function App() {
               }`}
             >
               <Zap className="w-3 h-3 text-emerald-400" />
-              <span>Benchmark Lab</span>
+              <span>Benchmark</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('recurrence')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+                currentView === 'recurrence'
+                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <Calculator className="w-3 h-3 text-purple-400" />
+              <span>Solver</span>
             </button>
           </div>
         </header>
@@ -121,8 +135,10 @@ export default function App() {
                 currentAlgoId={selectedAlgo}
                 onAlgoChange={setSelectedAlgo}
               />
-            ) : (
+            ) : currentView === 'benchmark' ? (
               <BenchmarkLab />
+            ) : (
+              <MathLab />
             )}
           </div>
         </main>

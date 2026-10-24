@@ -8,7 +8,11 @@ import {
   Terminal,
   Activity,
   CheckCircle2,
-  Lock
+  Lock,
+  BarChart3,
+  Sliders,
+  Zap,
+  Play
 } from 'lucide-react';
 
 export const ALGORITHM_CATEGORIES = [
@@ -63,6 +67,8 @@ export const AVAILABLE_THEMES = [
 ];
 
 export function Navigation({
+  currentView = 'visualizer',
+  onViewChange,
   selectedAlgo,
   onSelectAlgo,
   currentTheme,
@@ -87,8 +93,51 @@ export function Navigation({
         </div>
       </div>
 
-      {/* Navigation Groups */}
+      {/* Primary Workspace View Toggles */}
+      <div className="p-3 border-b border-theme-border space-y-1 bg-theme-bg/30">
+        <button
+          onClick={() => onViewChange && onViewChange('visualizer')}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'visualizer'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>Visualizer Lab</span>
+          </div>
+          <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/10">
+            Generators
+          </span>
+        </button>
+
+        <button
+          onClick={() => onViewChange && onViewChange('benchmark')}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'benchmark'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5" />
+            <span>Benchmark Lab</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'benchmark' ? 'bg-black/10' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+          }`}>
+            Web Worker
+          </span>
+        </button>
+      </div>
+
+      {/* Navigation Groups for Algorithms */}
       <div className="flex-1 overflow-y-auto p-3 space-y-5">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-theme-text-muted px-2">
+          Algorithm Suite
+        </div>
+
         {ALGORITHM_CATEGORIES.map((category) => {
           const CategoryIcon = category.icon;
           return (
@@ -100,11 +149,16 @@ export function Navigation({
 
               <div className="space-y-0.5">
                 {category.algorithms.map((algo) => {
-                  const isSelected = selectedAlgo === algo.id;
+                  const isSelected = currentView === 'visualizer' && selectedAlgo === algo.id;
                   return (
                     <button
                       key={algo.id}
-                      onClick={() => algo.implemented && onSelectAlgo(algo.id)}
+                      onClick={() => {
+                        if (algo.implemented) {
+                          if (onViewChange) onViewChange('visualizer');
+                          if (onSelectAlgo) onSelectAlgo(algo.id);
+                        }
+                      }}
                       disabled={!algo.implemented}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                         isSelected
@@ -159,8 +213,8 @@ export function Navigation({
           ))}
         </select>
         <div className="mt-2 text-[10px] text-theme-text-muted font-mono px-1 flex items-center justify-between">
-          <span>Engine:</span>
-          <span className="text-emerald-400">Generator (yield*)</span>
+          <span>Worker Threads:</span>
+          <span className="text-emerald-400">Dedicated Worker</span>
         </div>
       </div>
     </aside>

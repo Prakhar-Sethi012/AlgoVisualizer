@@ -3,12 +3,13 @@ import { Navigation } from './components/Navigation';
 import { VisualizerView } from './components/VisualizerView';
 import { StackQueueView } from './components/DataStructures/StackQueueView';
 import { TreeView } from './components/DataStructures/TreeView';
+import { GraphView } from './components/DataStructures/GraphView';
 import { BenchmarkLab } from './components/BenchmarkLab';
 import { MathLab } from './components/MathLab';
-import { Cpu, Play, Zap, Calculator, Layers, Menu, X, GitBranch } from 'lucide-react';
+import { Cpu, Play, Zap, Calculator, Layers, Menu, X, GitBranch, Network } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'trees' | 'benchmark' | 'recurrence'
+  const [currentView, setCurrentView] = useState('visualizer'); // 'visualizer' | 'data-structures' | 'trees' | 'graphs' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
   const [selectedDS, setSelectedDS] = useState('stack');
   const [currentTheme, setCurrentTheme] = useState('default');
@@ -29,6 +30,8 @@ export default function App() {
         return `/ Data Structures / ${selectedDS === 'stack' ? 'Stack (LIFO)' : 'Queue (FIFO)'}`;
       case 'trees':
         return '/ Trees / AVL Tree (Self-Balancing Rotations)';
+      case 'graphs':
+        return '/ Graphs / Dijkstra & Kruskal MST';
       case 'benchmark':
         return '/ Benchmarking Lab (Web Worker Offloaded)';
       case 'recurrence':
@@ -110,7 +113,7 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 4.2 Active
+                Phase 4.3 Active
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
                 {getBreadcrumb()}
@@ -157,6 +160,18 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setCurrentView('graphs')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                currentView === 'graphs'
+                  ? 'bg-theme-card text-cyan-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <Network className="w-3 h-3 text-cyan-400" />
+              <span className="hidden sm:inline">Graphs</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView('benchmark')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'benchmark'
@@ -194,6 +209,8 @@ export default function App() {
               <StackQueueView initialMode={selectedDS} />
             ) : currentView === 'trees' ? (
               <TreeView />
+            ) : currentView === 'graphs' ? (
+              <GraphView />
             ) : currentView === 'benchmark' ? (
               <BenchmarkLab />
             ) : (

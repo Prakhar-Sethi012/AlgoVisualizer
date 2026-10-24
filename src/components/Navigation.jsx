@@ -65,9 +65,10 @@ export const ALGORITHM_CATEGORIES = [
     name: 'Graphs',
     icon: Network,
     algorithms: [
+      { id: 'dijkstra', name: "Dijkstra's Path", implemented: true, tag: 'Greedy' },
+      { id: 'kruskal', name: "Kruskal's MST", implemented: true, tag: 'UnionFind' },
       { id: 'bfs', name: 'Breadth-First Search', implemented: false, tag: 'Next Phase' },
       { id: 'dfs', name: 'Depth-First Search', implemented: false, tag: 'Next Phase' },
-      { id: 'dijkstra', name: "Dijkstra's Shortest Path", implemented: false, tag: 'Next Phase' },
     ]
   }
 ];
@@ -167,6 +168,25 @@ export function Navigation({
         </button>
 
         <button
+          onClick={() => onViewChange && onViewChange('graphs')}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'graphs'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Network className="w-3.5 h-3.5" />
+            <span>Graphs</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'graphs' ? 'bg-black/10' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+          }`}>
+            Dijkstra / MST
+          </span>
+        </button>
+
+        <button
           onClick={() => onViewChange && onViewChange('benchmark')}
           className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'benchmark'
@@ -224,10 +244,13 @@ export function Navigation({
                 {category.algorithms.map((algo) => {
                   const isDS = category.id === 'data-structures';
                   const isTree = category.id === 'trees';
+                  const isGraph = category.id === 'graphs';
                   const isSelected = isDS
                     ? currentView === 'data-structures' && selectedDS === algo.id
                     : isTree
                     ? currentView === 'trees' && algo.id === 'avl-tree'
+                    : isGraph
+                    ? currentView === 'graphs' && (algo.id === 'dijkstra' || algo.id === 'kruskal')
                     : currentView === 'visualizer' && selectedAlgo === algo.id;
 
                   return (
@@ -240,6 +263,8 @@ export function Navigation({
                             if (onSelectDS) onSelectDS(algo.id);
                           } else if (isTree) {
                             if (onViewChange) onViewChange('trees');
+                          } else if (isGraph) {
+                            if (onViewChange) onViewChange('graphs');
                           } else {
                             if (onViewChange) onViewChange('visualizer');
                             if (onSelectAlgo) onSelectAlgo(algo.id);

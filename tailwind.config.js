@@ -30,6 +30,7 @@ export default {
           swapped: 'var(--color-algo-swapped)',
           sorted: 'var(--color-algo-sorted)',
           pivot: 'var(--color-algo-pivot)',
+          overwriting: 'var(--color-algo-overwriting)',
         },
         // Direct palette tokens from secret_folder
         charcoal: '#36454f',

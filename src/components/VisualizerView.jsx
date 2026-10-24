@@ -1,64 +1,142 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, StepForward, RotateCcw, Shuffle, Info, Zap, ArrowDownUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Play,
+  Pause,
+  StepForward,
+  RotateCcw,
+  Shuffle,
+  Info,
+  Zap,
+  ArrowDownUp,
+  Layers,
+  Sparkles
+} from 'lucide-react';
 import { bubbleSort } from '../core/algorithms/sorting/bubbleSort';
+import { quickSort } from '../core/algorithms/sorting/quickSort';
+import { mergeSort } from '../core/algorithms/sorting/mergeSort';
 
-export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
+export const ALGORITHM_REGISTRY = {
+  'bubble-sort': {
+    id: 'bubble-sort',
+    name: 'Bubble Sort',
+    generator: bubbleSort,
+    timeComplexity: 'O(n²)',
+    spaceComplexity: 'O(1)',
+    stable: 'Yes',
+    inPlace: 'Yes',
+    description: 'Iteratively compares adjacent elements and swaps them into order, bubbling the largest unsorted element to the end of the array.'
+  },
+  'quick-sort': {
+    id: 'quick-sort',
+    name: 'Quick Sort',
+    generator: quickSort,
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(log n)',
+    stable: 'No',
+    inPlace: 'Yes',
+    description: 'Divides the array around an actively chosen pivot element, recursively partitioning smaller elements to the left and larger to the right.'
+  },
+  'merge-sort': {
+    id: 'merge-sort',
+    name: 'Merge Sort',
+    generator: mergeSort,
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(n)',
+    stable: 'Yes',
+    inPlace: 'No',
+    description: 'Divides array into single elements, then merges sorted subarrays by overwriting elements into the primary array from auxiliary buffers.'
+  }
+};
+
+export function VisualizerView({
+  currentAlgoId = 'bubble-sort',
+  onAlgoChange
+}) {
+  const [selectedAlgoId, setSelectedAlgoId] = useState(currentAlgoId);
   const [arraySize, setArraySize] = useState(20);
-  const [speedMs, setSpeedMs] = useState(150);
+  const [speedMs, setSpeedMs] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
-  // Initial and current array data
+  // Sync internal state with external prop if changed from sidebar
+  useEffect(() => {
+    if (currentAlgoId && currentAlgoId !== selectedAlgoId && ALGORITHM_REGISTRY[currentAlgoId]) {
+      handleAlgorithmSwitch(currentAlgoId);
+    }
+  }, [currentAlgoId]);
+
+  // Base array data (kept unique for clean Framer Motion layout animations)
   const [baseArray, setBaseArray] = useState([]);
   const [state, setState] = useState({
     array: [],
     comparing: [],
+    pivot: null,
+    overwriting: [],
     swapped: false,
     sortedIndices: [],
     comparisons: 0,
     swaps: 0,
-    stepInfo: 'Generate an array and press Play or Step to begin.'
+    stepInfo: 'Ready to visualize.'
   });
 
   const generatorRef = useRef(null);
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
 
-  // Helper to generate a random array
+  // Generate distinct random integers so Framer Motion layout springs track unique keys
   const generateRandomArray = useCallback((size) => {
-    const arr = [];
-    for (let i = 0; i < size; i++) {
-      // Random integer between 10 and 100
-      arr.push(Math.floor(Math.random() * 85) + 15);
+    const pool = Array.from({ length: 85 }, (_, i) => i + 15);
+    // Fisher-Yates shuffle
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return arr;
+    return pool.slice(0, size);
   }, []);
 
-  // Reset visualizer with either new array or same base array
-  const initVisualizer = useCallback((newArr) => {
+  // Initialize visualizer with the active algorithm
+  const initVisualizer = useCallback((algoId, newArr) => {
     setIsPlaying(false);
     setIsDone(false);
-    const arr = newArr || [...baseArray];
+
+    const arr = newArr ? [...newArr] : [...baseArray];
     if (newArr) {
       setBaseArray([...newArr]);
     }
-    generatorRef.current = bubbleSort(arr);
+
+    const algoConfig = ALGORITHM_REGISTRY[algoId] || ALGORITHM_REGISTRY['bubble-sort'];
+    generatorRef.current = algoConfig.generator(arr);
+
     const initialYield = generatorRef.current.next().value;
     setState(initialYield || {
       array: arr,
       comparing: [],
+      pivot: null,
+      overwriting: [],
       swapped: false,
       sortedIndices: [],
       comparisons: 0,
       swaps: 0,
-      stepInfo: 'Ready to visualize.'
+      stepInfo: `Ready to run ${algoConfig.name}.`
     });
   }, [baseArray]);
+
+  // Handle switching algorithm: halts any execution and resets array
+  const handleAlgorithmSwitch = (newAlgoId) => {
+    if (!ALGORITHM_REGISTRY[newAlgoId]) return;
+    setIsPlaying(false);
+    setSelectedAlgoId(newAlgoId);
+    if (onAlgoChange) {
+      onAlgoChange(newAlgoId);
+    }
+    initVisualizer(newAlgoId, baseArray.length ? baseArray : null);
+  };
 
   // Initial load
   useEffect(() => {
     const initial = generateRandomArray(arraySize);
-    initVisualizer(initial);
+    initVisualizer(selectedAlgoId, initial);
   }, [arraySize, generateRandomArray]);
 
   // Execute a single step of the generator
@@ -74,7 +152,7 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
     }
   }, []);
 
-  // Play loop
+  // Continuous play loop
   useEffect(() => {
     if (!isPlaying || isDone) return;
 
@@ -95,8 +173,7 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
 
   const togglePlay = () => {
     if (isDone) {
-      // If already done, reset first then play
-      initVisualizer();
+      initVisualizer(selectedAlgoId);
       setIsPlaying(true);
     } else {
       setIsPlaying(!isPlaying);
@@ -105,59 +182,102 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
 
   const handleShuffle = () => {
     const newArr = generateRandomArray(arraySize);
-    initVisualizer(newArr);
+    initVisualizer(selectedAlgoId, newArr);
   };
 
   const handleReset = () => {
-    initVisualizer();
+    initVisualizer(selectedAlgoId);
   };
 
+  const currentAlgo = ALGORITHM_REGISTRY[selectedAlgoId] || ALGORITHM_REGISTRY['bubble-sort'];
   const maxVal = Math.max(...(state.array.length ? state.array : [100]), 100);
 
-  // Determine bar color styling based on generator state
+  // Determine bar styling based on generator state (Pivot > Overwriting > Comparing/Swapped > Sorted > Default)
   const getBarColorClass = (index) => {
-    if (state.comparing.includes(index)) {
+    // 1. Pivot state for Quick Sort
+    const isPivot = state.pivot === index || (Array.isArray(state.pivot) && state.pivot.includes(index));
+    if (isPivot) {
+      return 'bg-algo-pivot shadow-glow ring-2 ring-purple-400';
+    }
+
+    // 2. Overwriting state for Merge Sort
+    const isOverwriting = state.overwriting?.includes(index) || state.overwriting === index;
+    if (isOverwriting) {
+      return 'bg-algo-overwriting shadow-glow ring-2 ring-cyan-300';
+    }
+
+    // 3. Comparison / Swapped state
+    if (state.comparing?.includes(index)) {
       if (state.swapped) {
         return 'bg-algo-swapped shadow-glow ring-2 ring-red-400';
       }
       return 'bg-algo-comparing ring-2 ring-amber-300';
     }
+
+    // 4. Sorted state
     if (state.sortedIndices?.includes(index)) {
       return 'bg-algo-sorted';
     }
+
+    // 5. Default unsorted state
     return 'bg-algo-default hover:opacity-90';
   };
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      {/* Top Header & Educational Context */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border">
+      {/* Top Header & Algorithm Switcher */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-theme-text font-sans">
-              {algorithmName}
-            </h1>
-            <span className="px-2.5 py-0.5 text-xs font-mono rounded bg-theme-surface border border-theme-border text-theme-accent">
-              O(n²) Time
+          {/* Minimalist Algorithm Tabs / Selector */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {Object.values(ALGORITHM_REGISTRY).map((algo) => {
+              const isActive = selectedAlgoId === algo.id;
+              return (
+                <button
+                  key={algo.id}
+                  onClick={() => handleAlgorithmSwitch(algo.id)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all flex items-center gap-1.5 border ${
+                    isActive
+                      ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
+                      : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{algo.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-theme-text-muted">
+            <span className="px-2 py-0.5 rounded bg-theme-surface border border-theme-border text-theme-primary font-semibold">
+              Time: {currentAlgo.timeComplexity}
             </span>
-            <span className="px-2.5 py-0.5 text-xs font-mono rounded bg-theme-surface border border-theme-border text-theme-accent">
-              O(1) Space
+            <span className="px-2 py-0.5 rounded bg-theme-surface border border-theme-border text-theme-accent">
+              Space: {currentAlgo.spaceComplexity}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-theme-surface border border-theme-border text-theme-accent">
+              Stable: {currentAlgo.stable}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-theme-surface border border-theme-border text-theme-accent">
+              In-Place: {currentAlgo.inPlace}
             </span>
           </div>
-          <p className="text-sm text-theme-text-muted mt-1">
-            Iteratively steps through the list, compares adjacent elements, and swaps them if they are in the wrong order.
+
+          <p className="text-xs text-theme-text-muted mt-2 max-w-2xl">
+            {currentAlgo.description}
           </p>
         </div>
 
         {/* Real-time Counters */}
-        <div className="flex items-center gap-4 bg-theme-surface p-2.5 px-4 rounded-lg border border-theme-border font-mono text-xs">
+        <div className="flex items-center gap-4 bg-theme-surface p-2.5 px-4 rounded-lg border border-theme-border font-mono text-xs self-start lg:self-auto">
           <div>
             <span className="text-theme-text-muted">Comparisons:</span>{' '}
             <span className="font-semibold text-theme-primary">{state.comparisons}</span>
           </div>
           <div className="h-4 w-px bg-theme-border" />
           <div>
-            <span className="text-theme-text-muted">Swaps:</span>{' '}
+            <span className="text-theme-text-muted">Operations:</span>{' '}
             <span className="font-semibold text-algo-swapped">{state.swaps}</span>
           </div>
           <div className="h-4 w-px bg-theme-border" />
@@ -170,28 +290,36 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
         </div>
       </div>
 
-      {/* Main Visualization Canvas / Container */}
+      {/* Main Visualization Canvas with Framer Motion Layout Bars */}
       <div className="flex-1 min-h-[380px] bg-theme-surface rounded-xl border border-theme-border p-6 flex flex-col justify-end shadow-subtle relative overflow-hidden">
-        {/* Step Inspector / Live Explainer */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-          <div className="flex items-center gap-2 text-xs font-mono bg-theme-bg/80 backdrop-blur-sm px-3 py-1.5 rounded-md border border-theme-border text-theme-text max-w-lg truncate">
+        {/* Step Inspector / Live Explainer HUD */}
+        <div className="absolute top-4 left-4 right-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pointer-events-none z-10">
+          <div className="flex items-center gap-2 text-xs font-mono bg-theme-bg/90 backdrop-blur-sm px-3 py-1.5 rounded-md border border-theme-border text-theme-text max-w-xl truncate shadow-subtle">
             <Info className="w-3.5 h-3.5 text-theme-primary flex-shrink-0" />
             <span className="truncate">{state.stepInfo}</span>
           </div>
 
           {/* Color Legend */}
-          <div className="hidden md:flex items-center gap-3 text-xs font-mono bg-theme-bg/80 backdrop-blur-sm px-3 py-1.5 rounded-md border border-theme-border">
+          <div className="hidden lg:flex items-center gap-3 text-[11px] font-mono bg-theme-bg/90 backdrop-blur-sm px-3 py-1.5 rounded-md border border-theme-border shadow-subtle">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-algo-default inline-block" />
               <span className="text-theme-text-muted">Unsorted</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-algo-comparing inline-block" />
-              <span className="text-theme-text-muted">Comparing</span>
+              <span className="text-theme-text-muted">Compare</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-algo-swapped inline-block" />
-              <span className="text-theme-text-muted">Swapped</span>
+              <span className="text-theme-text-muted">Swap</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-algo-pivot inline-block" />
+              <span className="text-theme-text-muted">Pivot</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-algo-overwriting inline-block" />
+              <span className="text-theme-text-muted">Overwrite</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-algo-sorted inline-block" />
@@ -200,47 +328,57 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
           </div>
         </div>
 
-        {/* Array Bars View */}
-        <div className="w-full h-[280px] flex items-end justify-center gap-1.5 sm:gap-2 px-2 pt-10">
+        {/* Array Bars View with Framer Motion fluid positional swaps */}
+        <div className="w-full h-[280px] flex items-end justify-center gap-1.5 sm:gap-2 px-2 pt-12">
           {state.array.map((value, idx) => {
             const heightPercent = Math.max((value / maxVal) * 100, 6);
-            const isComparing = state.comparing.includes(idx);
+            const isComparing = state.comparing?.includes(idx);
+            const isPivot = state.pivot === idx || (Array.isArray(state.pivot) && state.pivot.includes(idx));
+            const isOverwriting = state.overwriting?.includes(idx);
 
             return (
-              <div
-                key={idx}
+              <motion.div
+                key={value}
+                layout
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 className="flex-1 flex flex-col items-center justify-end h-full max-w-[40px] group relative"
               >
                 {/* Numeric value label */}
                 {arraySize <= 30 && (
                   <span
-                    className={`text-[10px] sm:text-xs font-mono mb-1 transition-colors ${
-                      isComparing ? 'text-theme-primary font-bold' : 'text-theme-text-muted opacity-80'
+                    className={`text-[10px] sm:text-xs font-mono mb-1 transition-colors select-none ${
+                      isPivot
+                        ? 'text-purple-400 font-bold'
+                        : isOverwriting
+                        ? 'text-cyan-300 font-bold'
+                        : isComparing
+                        ? 'text-theme-primary font-bold'
+                        : 'text-theme-text-muted opacity-80'
                     }`}
                   >
                     {value}
                   </span>
                 )}
 
-                {/* Vertical Bar */}
+                {/* Vertical Bar Element */}
                 <div
                   style={{ height: `${heightPercent}%` }}
-                  className={`w-full rounded-t-sm transition-all duration-100 ease-out ${getBarColorClass(idx)}`}
+                  className={`w-full rounded-t-sm transition-colors duration-100 ease-out ${getBarColorClass(idx)}`}
                 />
 
                 {/* Index label */}
                 {arraySize <= 25 && (
-                  <span className="text-[9px] font-mono text-theme-text-muted mt-1.5 opacity-60">
+                  <span className="text-[9px] font-mono text-theme-text-muted mt-1.5 opacity-60 select-none">
                     {idx}
                   </span>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Control Bar */}
+      {/* Control Panel */}
       <div className="bg-theme-surface rounded-xl border border-theme-border p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
         {/* Playback Action Buttons */}
         <div className="flex items-center gap-2">
@@ -249,7 +387,7 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
             className={`flex items-center gap-2 px-5 py-2 rounded-lg font-medium text-sm transition-all shadow-subtle ${
               isPlaying
                 ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                : 'bg-theme-primary hover:bg-theme-primary-hover text-slate-900 font-semibold'
+                : 'bg-theme-primary hover:bg-theme-primary-hover text-slate-950 font-semibold'
             }`}
           >
             {isPlaying ? (
@@ -267,7 +405,7 @@ export function VisualizerView({ algorithmName = 'Bubble Sort' }) {
             onClick={handleStep}
             disabled={isPlaying || isDone}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-theme-border bg-theme-card hover:bg-theme-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-theme-text"
-            title="Execute single generator step"
+            title="Execute single generator step (yield)"
           >
             <StepForward className="w-4 h-4" /> Step
           </button>

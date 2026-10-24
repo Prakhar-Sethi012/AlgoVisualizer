@@ -67,10 +67,10 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-theme-primary/10 text-theme-primary border border-theme-primary/20">
-                Phase 1.1 Active
+                Phase 1.2 Active
               </span>
               <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
-                / Sorting / Bubble Sort
+                / Sorting / {selectedAlgo === 'bubble-sort' ? 'Bubble Sort' : selectedAlgo === 'quick-sort' ? 'Quick Sort' : 'Merge Sort'}
               </span>
             </div>
           </div>
@@ -89,7 +89,10 @@ export default function App() {
         {/* Visualizer Workbench */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-6xl mx-auto h-full flex flex-col">
-            <VisualizerView algorithmName="Bubble Sort" />
+            <VisualizerView
+              currentAlgoId={selectedAlgo}
+              onAlgoChange={setSelectedAlgo}
+            />
           </div>
         </main>
       </div>

@@ -23,6 +23,7 @@
   --color-algo-swapped: #ef4444;   /* Coral red: swapped */
   --color-algo-sorted: #10b981;    /* Emerald: sorted in place */
   --color-algo-pivot: #8b5cf6;     /* Purple: pivot/target */
+  --color-algo-overwriting: #06b6d4; /* Cyan: overwrite from auxiliary */
 }
 
 /* Light Mode Modern Minimalist */
@@ -45,6 +46,7 @@
   --color-algo-swapped: #dc2626;
   --color-algo-sorted: #059669;
   --color-algo-pivot: #7c3aed;
+  --color-algo-overwriting: #0891b2;
 }
 
 /* Ocean Depths Theme (from secret_folder/themes/ocean-depths.md) */
@@ -67,6 +69,7 @@
   --color-algo-swapped: #e63946;
   --color-algo-sorted: #2d8b8b;
   --color-algo-pivot: #a8dadc;
+  --color-algo-overwriting: #38bdf8;
 }
 
 /* Tech Innovation Theme (from secret_folder/themes/tech-innovation.md) */
@@ -89,6 +92,7 @@
   --color-algo-swapped: #ef4444;
   --color-algo-sorted: #00ffff;
   --color-algo-pivot: #0066ff;
+  --color-algo-overwriting: #38bdf8;
 }
 
 /* Arctic Frost Theme (from secret_folder/themes/arctic-frost.md) */
@@ -111,6 +115,7 @@
   --color-algo-swapped: #f43f5e;
   --color-algo-sorted: #34d399;
   --color-algo-pivot: #d4e4f7;
+  --color-algo-overwriting: #38bdf8;
 }
 
 /* Global Polish */

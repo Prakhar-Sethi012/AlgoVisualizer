@@ -19,6 +19,8 @@ export function* bubbleSort(initialArray) {
   yield {
     array: [...arr],
     comparing: [],
+    pivot: null,
+    overwriting: [],
     swapped: false,
     sortedIndices: [...sortedIndices],
     comparisons,

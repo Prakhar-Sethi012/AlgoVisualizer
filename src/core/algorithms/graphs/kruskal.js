@@ -77,7 +77,7 @@ export function* kruskal(nodes, edges) {
     rejectedEdgeIds: [],
     totalWeight: 0,
     componentsCount: uf.count,
-    stepInfo: `Kruskal's MST initialized. Sorted ${sortedEdges.length} edges in ascending order by weight.`
+    stepInfo: `Sorted all ${sortedEdges.length} available roads from cheapest to most expensive.`
   };
 
   for (const edge of sortedEdges) {
@@ -91,7 +91,7 @@ export function* kruskal(nodes, edges) {
       rejectedEdgeIds: Array.from(rejectedEdgeIds),
       totalWeight,
       componentsCount: uf.count,
-      stepInfo: `Inspecting lowest-weight available edge '${edge.source}'—'${edge.target}' (weight ${edge.weight}).`
+      stepInfo: `Considering the cheapest available road: '${edge.source}'—'${edge.target}' (road cost ${edge.weight}).`
     };
 
     // 2. Check for cycle using Union-Find
@@ -107,7 +107,7 @@ export function* kruskal(nodes, edges) {
         rejectedEdgeIds: Array.from(rejectedEdgeIds),
         totalWeight,
         componentsCount: uf.count,
-        stepInfo: `Cycle detected! Nodes '${edge.source}' and '${edge.target}' are already connected in the same component. Rejecting edge '${edge.id}'.`
+        stepInfo: `Useless loop detected! Towns '${edge.source}' and '${edge.target}' are already connected. Discarding road.`
       };
     } else {
       uf.union(edge.source, edge.target);
@@ -123,7 +123,7 @@ export function* kruskal(nodes, edges) {
         rejectedEdgeIds: Array.from(rejectedEdgeIds),
         totalWeight,
         componentsCount: uf.count,
-        stepInfo: `Accepted edge '${edge.source}'—'${edge.target}' (weight ${edge.weight}) into MST! Current tree weight: ${totalWeight}.`
+        stepInfo: `Paved cheapest road '${edge.source}'—'${edge.target}' (cost ${edge.weight})! Total road cost so far: ${totalWeight}.`
       };
 
       // Check if MST is complete (V - 1 edges)
@@ -143,6 +143,6 @@ export function* kruskal(nodes, edges) {
     rejectedEdgeIds: Array.from(rejectedEdgeIds),
     totalWeight,
     componentsCount: uf.count,
-    stepInfo: `Kruskal's MST complete! Connected all ${nodes.length} nodes with ${mstEdges.length} edges. Total MST weight: ${totalWeight}.`
+    stepInfo: `All towns successfully connected! Built ${mstEdges.length} roads for a minimum total cost of ${totalWeight}.`
   };
 }

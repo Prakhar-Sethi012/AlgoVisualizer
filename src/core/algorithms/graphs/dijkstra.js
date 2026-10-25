@@ -56,7 +56,7 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
     targetNodeId: chosenTarget,
     distances: { ...distances },
     previous: { ...previous },
-    stepInfo: `Initialized Dijkstra from source '${startNodeId}'. All other distances set to ∞.`
+    stepInfo: `Starting GPS search from source '${startNodeId}'. All other destination distances are unknown (∞).`
   };
 
   while (unvisited.size > 0) {
@@ -91,7 +91,7 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
       targetNodeId: chosenTarget,
       distances: { ...distances },
       previous: { ...previous },
-      stepInfo: `Extracted node '${u}' with shortest tentative distance ${distances[u]}.`
+      stepInfo: `Stepping to nearest reachable location '${u}' (current cost: ${distances[u]}).`
     };
 
     unvisited.delete(u);
@@ -117,7 +117,7 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
         targetNodeId: chosenTarget,
         distances: { ...distances },
         previous: { ...previous },
-        stepInfo: `Evaluating edge '${u}'—'${v}' (weight ${weight}). Candidate distance: ${distances[u]} + ${weight} = ${candidateDist}.`
+        stepInfo: `Checking road '${u}'—'${v}' (road cost ${weight}). Potential route cost: ${distances[u]} + ${weight} = ${candidateDist}.`
       };
 
       if (candidateDist < distances[v]) {
@@ -138,7 +138,7 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
           targetNodeId: chosenTarget,
           distances: { ...distances },
           previous: { ...previous },
-          stepInfo: `Relaxed distance to '${v}': ${oldDist === Infinity ? '∞' : oldDist} → ${candidateDist} via node '${u}'.`
+          stepInfo: `Found a faster shortcut to '${v}'! Improved route cost from ${oldDist === Infinity ? '∞' : oldDist} → ${candidateDist} via '${u}'.`
         };
       } else {
         yield {
@@ -153,7 +153,7 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
           targetNodeId: chosenTarget,
           distances: { ...distances },
           previous: { ...previous },
-          stepInfo: `Existing distance to '${v}' (${distances[v]}) is already ≤ candidate (${candidateDist}). No update.`
+          stepInfo: `Road '${u}'—'${v}' is not a shortcut. Current best route to '${v}' (${distances[v]}) is already faster than or equal to ${candidateDist}.`
         };
       }
     }
@@ -189,6 +189,6 @@ export function* dijkstra(nodes, edges, startNodeId = 'A', targetNodeId = null) 
     targetNodeId: chosenTarget,
     distances: { ...distances },
     previous: { ...previous },
-    stepInfo: `Dijkstra complete! Shortest path to '${chosenTarget}' is [${pathNodeIds.join(' → ')}] with total distance ${distances[chosenTarget]}.`
+    stepInfo: `Fastest route found! Shortest path to '${chosenTarget}' is [${pathNodeIds.join(' → ')}] with total travel cost ${distances[chosenTarget]}.`
   };
 }

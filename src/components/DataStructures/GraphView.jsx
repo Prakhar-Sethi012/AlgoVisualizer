@@ -15,15 +15,25 @@ import {
   GitBranch,
   ArrowRight,
   TrendingUp,
-  Maximize2
+  Maximize2,
+  Layers
 } from 'lucide-react';
-import { initialNodes, initialEdges, randomizeWeights, getScaledNodes } from '../../core/utils/graphData';
+import {
+  GRAPH_PRESETS,
+  initialNodes,
+  initialEdges,
+  randomizeWeights,
+  getScaledNodes
+} from '../../core/utils/graphData';
 import { dijkstra } from '../../core/algorithms/graphs/dijkstra';
 import { kruskal } from '../../core/algorithms/graphs/kruskal';
 
 const NODE_RADIUS = 22;
 
 export function GraphView() {
+  // Map preset selection: 'wheel' | 'grid' | 'bottleneck'
+  const [selectedMapId, setSelectedMapId] = useState('wheel');
+
   // Algorithm selection: 'dijkstra' | 'kruskal'
   const [algoMode, setAlgoMode] = useState('dijkstra');
 
@@ -84,8 +94,8 @@ export function GraphView() {
   }, []);
 
   const nodes = useMemo(() => {
-    return getScaledNodes(dimensions.width, dimensions.height);
-  }, [dimensions]);
+    return getScaledNodes(selectedMapId, dimensions.width, dimensions.height);
+  }, [selectedMapId, dimensions]);
 
   // Lookup map for fast node coordinate retrieval
   const nodeMap = useMemo(() => {
@@ -113,7 +123,7 @@ export function GraphView() {
     previous: {},
     sortedEdges: [],
     totalWeight: 0,
-    stepInfo: 'Graph loaded. Select an algorithm to begin visualization.'
+    stepInfo: 'Map loaded. Choose Run or Step to watch the algorithm explore.'
   });
 
   // Step runner
@@ -186,6 +196,20 @@ export function GraphView() {
     }
   };
 
+  // Switch between graph presets (Wheel, City Grid, Bottleneck)
+  const handleMapChange = (mapId) => {
+    setSelectedMapId(mapId);
+    const preset = GRAPH_PRESETS[mapId] || GRAPH_PRESETS.wheel;
+    setEdges(preset.edges);
+    setStartNodeId(preset.defaultStart);
+    setTargetNodeId(preset.defaultTarget);
+    resetVisualState();
+    setVisualState((prev) => ({
+      ...prev,
+      stepInfo: `Loaded ${preset.name}. Select an algorithm to begin visualization.`
+    }));
+  };
+
   // Randomize edge weights
   const handleRandomizeWeights = () => {
     const updated = randomizeWeights(edges);
@@ -193,7 +217,7 @@ export function GraphView() {
     resetVisualState();
     setVisualState((prev) => ({
       ...prev,
-      stepInfo: 'Randomized all edge weights between 1 and 20.'
+      stepInfo: 'Randomized all road travel costs between 1 and 20.'
     }));
   };
 
@@ -218,7 +242,7 @@ export function GraphView() {
       previous: {},
       sortedEdges: [],
       totalWeight: 0,
-      stepInfo: 'Graph ready. Choose an operation to explore.'
+      stepInfo: 'Map ready. Choose an operation to explore.'
     });
   };
 
@@ -367,6 +391,34 @@ export function GraphView() {
         </div>
       </div>
 
+      {/* Plain English Algorithm Explainer HUD */}
+      <div className="bg-theme-surface rounded-xl border border-theme-border p-4 shadow-subtle flex items-start gap-3.5 relative overflow-hidden">
+        <div
+          className={`p-2.5 rounded-lg flex-shrink-0 ${
+            algoMode === 'dijkstra'
+              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+              : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
+          }`}
+        >
+          {algoMode === 'dijkstra' ? <Waypoints className="w-5 h-5" /> : <GitBranch className="w-5 h-5" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-theme-text">
+              Plain English Explainer
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-theme-bg border border-theme-border text-theme-accent">
+              {algoMode === 'dijkstra' ? 'GPS Shortest Path Analogy' : 'Cheapest Road Network Analogy'}
+            </span>
+          </div>
+          <p className="text-sm font-sans leading-relaxed text-theme-text font-medium">
+            {algoMode === 'dijkstra'
+              ? "Dijkstra's Algorithm finds the fastest route like a GPS avoiding traffic. It explores outward, always taking the shortest known step first. If it finds a shortcut to a node it already visited, it updates its map."
+              : "Kruskal's Algorithm paves the cheapest roads to connect every town. It grabs the shortest available road on the whole map. If that road creates a useless loop, it throws it away. It stops when everything is connected."}
+          </p>
+        </div>
+      </div>
+
       {/* Main Graph Viewport + Live HUD Side Panel */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-[440px]">
         {/* Left: SVG + Framer Motion Canvas Container */}
@@ -385,7 +437,7 @@ export function GraphView() {
             <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono bg-theme-bg/90 backdrop-blur-sm px-3 py-1.5 rounded-md border border-theme-border shadow-subtle">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-                <span className="text-theme-text-muted">Evaluating</span>
+                <span className="text-theme-text-muted">Checking</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
@@ -393,12 +445,12 @@ export function GraphView() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
-                <span className="text-theme-text-muted">{algoMode === 'dijkstra' ? 'Path' : 'MST'}</span>
+                <span className="text-theme-text-muted">{algoMode === 'dijkstra' ? 'Fastest Path' : 'Paved Road'}</span>
               </div>
               {algoMode === 'kruskal' && (
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />
-                  <span className="text-theme-text-muted">Cycle</span>
+                  <span className="text-theme-text-muted">Loop (Discard)</span>
                 </div>
               )}
             </div>
@@ -501,10 +553,10 @@ export function GraphView() {
             <div className="flex items-center justify-between pb-3 border-b border-theme-border">
               <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-theme-text">
                 <TrendingUp className="w-3.5 h-3.5 text-theme-primary" />
-                <span>{algoMode === 'dijkstra' ? 'Live Distances' : 'MST Edge Queue'}</span>
+                <span>{algoMode === 'dijkstra' ? 'Live Travel Costs' : 'Road Priority Queue'}</span>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-theme-bg border border-theme-border text-theme-text-muted">
-                {algoMode === 'dijkstra' ? `Source: ${startNodeId}` : `Total: ${visualState.totalWeight}`}
+                {algoMode === 'dijkstra' ? `Start: ${startNodeId}` : `Total: ${visualState.totalWeight}`}
               </span>
             </div>
 
@@ -512,10 +564,10 @@ export function GraphView() {
             {algoMode === 'dijkstra' && (
               <div className="mt-3 space-y-1.5 max-h-[290px] overflow-y-auto pr-1">
                 <div className="grid grid-cols-4 text-[10px] font-mono text-theme-text-muted uppercase tracking-wider px-2 py-1 bg-theme-bg/60 rounded">
-                  <span>Node</span>
-                  <span>Dist</span>
+                  <span>Location</span>
+                  <span>Cost</span>
                   <span>Via</span>
-                  <span>State</span>
+                  <span>Status</span>
                 </div>
 
                 {nodes.map((n) => {
@@ -542,7 +594,7 @@ export function GraphView() {
                       <span>{dist === undefined ? '—' : dist === Infinity ? '∞' : dist}</span>
                       <span>{prevNode}</span>
                       <span className="text-[10px]">
-                        {isCurrent ? 'Active' : isVisited ? 'Visited' : 'Queued'}
+                        {isCurrent ? 'Visiting' : isUpdated ? 'Shortcut!' : isVisited ? 'Visited' : 'Queued'}
                       </span>
                     </div>
                   );
@@ -554,8 +606,8 @@ export function GraphView() {
             {algoMode === 'kruskal' && (
               <div className="mt-3 space-y-1.5 max-h-[290px] overflow-y-auto pr-1">
                 <div className="grid grid-cols-3 text-[10px] font-mono text-theme-text-muted uppercase tracking-wider px-2 py-1 bg-theme-bg/60 rounded">
-                  <span>Edge</span>
-                  <span>Weight</span>
+                  <span>Road</span>
+                  <span>Cost</span>
                   <span>Status</span>
                 </div>
 
@@ -581,12 +633,12 @@ export function GraphView() {
                       <span className="font-bold">{e.weight}</span>
                       <span className="text-[10px]">
                         {isEvaluating
-                          ? 'Testing'
+                          ? 'Checking'
                           : isAccepted
-                          ? 'Accepted'
+                          ? 'Paved (Keep)'
                           : isRejected
-                          ? 'Cycle (Reject)'
-                          : 'Pending'}
+                          ? 'Loop (Discard)'
+                          : 'Available'}
                       </span>
                     </div>
                   );
@@ -599,9 +651,9 @@ export function GraphView() {
           <div className="pt-3 border-t border-theme-border font-mono text-[11px] space-y-1">
             {algoMode === 'dijkstra' ? (
               <div className="flex items-center justify-between text-theme-text-muted">
-                <span>Target: <span className="text-theme-accent font-semibold">{targetNodeId}</span></span>
+                <span>Destination: <span className="text-theme-accent font-semibold">{targetNodeId}</span></span>
                 <span>
-                  Path Cost:{' '}
+                  Fastest Route Cost:{' '}
                   <span className="text-emerald-400 font-semibold">
                     {visualState.distances[targetNodeId] !== undefined && visualState.distances[targetNodeId] !== Infinity
                       ? visualState.distances[targetNodeId]
@@ -611,8 +663,8 @@ export function GraphView() {
               </div>
             ) : (
               <div className="flex items-center justify-between text-theme-text-muted">
-                <span>Edges in MST: <span className="text-cyan-400 font-semibold">{visualState.mstEdgeIds.length} / {nodes.length - 1}</span></span>
-                <span>MST Weight: <span className="text-emerald-400 font-semibold">{visualState.totalWeight}</span></span>
+                <span>Roads Paved: <span className="text-cyan-400 font-semibold">{visualState.mstEdgeIds.length} / {nodes.length - 1}</span></span>
+                <span>Total Road Cost: <span className="text-emerald-400 font-semibold">{visualState.totalWeight}</span></span>
               </div>
             )}
           </div>
@@ -622,7 +674,23 @@ export function GraphView() {
       {/* Control Panel */}
       <div className="bg-theme-surface rounded-xl border border-theme-border p-4 flex flex-col lg:flex-row items-center justify-between gap-4 shadow-subtle">
         {/* Left Side: Algorithm Configuration & Triggers */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {/* Select Map Dropdown */}
+          <div className="flex items-center gap-1.5 text-xs font-mono text-theme-text-muted bg-theme-bg/60 px-2.5 py-1.5 rounded-lg border border-theme-border shadow-inner">
+            <Layers className="w-3.5 h-3.5 text-theme-primary" />
+            <span className="font-semibold text-theme-text">Select Map:</span>
+            <select
+              aria-label="Select Map"
+              value={selectedMapId}
+              onChange={(e) => handleMapChange(e.target.value)}
+              disabled={isPlaying}
+              className="bg-transparent border-0 text-theme-text focus:outline-none focus:ring-0 font-mono text-xs cursor-pointer font-medium"
+            >
+              <option value="wheel" className="bg-theme-surface text-theme-text">Wheel</option>
+              <option value="grid" className="bg-theme-surface text-theme-text">City Grid</option>
+              <option value="bottleneck" className="bg-theme-surface text-theme-text">Bottleneck</option>
+            </select>
+          </div>
           {algoMode === 'dijkstra' ? (
             <>
               {/* Start Node Selector */}

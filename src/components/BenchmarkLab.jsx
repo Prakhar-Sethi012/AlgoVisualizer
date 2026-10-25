@@ -23,10 +23,22 @@ import {
   Info,
   TrendingUp,
   Search,
-  ArrowDownUp
+  ArrowDownUp,
+  Code2,
+  AlertTriangle
 } from 'lucide-react';
+import Editor from '@monaco-editor/react';
 import BenchmarkWorker from '../workers/benchmark.worker.js?worker';
 import { enrichDatasetWithTheory } from '../core/math/curveFitter';
+
+const DEFAULT_CUSTOM_CODE = `// Write your custom sorting algorithm below.
+// You must return the sorted array.
+function customSort(arr) {
+  // Example: Built-in JS sort
+  return arr.sort((a, b) => a - b);
+}
+
+return customSort(arr);`;
 
 const SORT_ALGO_CONFIGS = [
   { id: 'bubble', name: 'Bubble Sort', complexity: 'O(n²)', color: '#f59e0b', defaultActive: true },
@@ -94,6 +106,11 @@ export function BenchmarkLab() {
   const [showTheoryOverlay, setShowTheoryOverlay] = useState(true);
   const [progressInfo, setProgressInfo] = useState(null);
 
+  // Custom Algorithm Sandbox State
+  const [enableCustomAlgo, setEnableCustomAlgo] = useState(false);
+  const [customCode, setCustomCode] = useState(DEFAULT_CUSTOM_CODE);
+  const [customCodeError, setCustomCodeError] = useState(null);
+
   const [sortResults, setSortResults] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
 
@@ -143,6 +160,7 @@ export function BenchmarkLab() {
     }
 
     setIsRunning(true);
+    setCustomCodeError(null);
     setProgressInfo({
       message: `Initializing Web Worker & Prepping ${benchmarkMode.toUpperCase()} datasets...`,
       percent: 0
@@ -154,7 +172,13 @@ export function BenchmarkLab() {
     worker.onmessage = (event) => {
       const data = event.data;
 
-      if (data.type === 'status') {
+      if (data.type === 'error') {
+        setCustomCodeError(data.message || 'Error executing custom code.');
+        setIsRunning(false);
+        setProgressInfo(null);
+        worker.terminate();
+        workerRef.current = null;
+      } else if (data.type === 'status') {
         setProgressInfo((prev) => ({
           ...prev,
           message: data.message
@@ -185,6 +209,7 @@ export function BenchmarkLab() {
 
     worker.onerror = (err) => {
       console.error('Web Worker Error:', err);
+      setCustomCodeError(err.message || 'Web Worker unexpected execution failure.');
       setIsRunning(false);
       setProgressInfo(null);
       worker.terminate();
@@ -196,7 +221,8 @@ export function BenchmarkLab() {
       worker.postMessage({
         mode: 'sorting',
         algorithms: selectedSortAlgos,
-        sizes: PRESET_SORT_SIZES
+        sizes: PRESET_SORT_SIZES,
+        customCode: enableCustomAlgo ? customCode : null
       });
     } else {
       worker.postMessage({
@@ -268,30 +294,52 @@ export function BenchmarkLab() {
 
           <div className="flex flex-wrap gap-2">
             {benchmarkMode === 'sorting' ? (
-              SORT_ALGO_CONFIGS.map((algo) => {
-                const isSelected = selectedSortAlgos.includes(algo.id);
-                return (
-                  <button
-                    key={algo.id}
-                    onClick={() => toggleSortAlgorithm(algo.id)}
-                    disabled={isRunning}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
-                      isSelected
-                        ? 'bg-theme-card text-theme-text border-theme-primary shadow-subtle'
-                        : 'bg-theme-bg/60 text-theme-text-muted/60 border-theme-border hover:text-theme-text'
-                    } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: isSelected ? algo.color : '#64748b' }}
-                    />
-                    <span>{algo.name}</span>
-                    <span className="text-[10px] text-theme-text-muted opacity-70">
-                      {algo.complexity}
-                    </span>
-                  </button>
-                );
-              })
+              <>
+                {SORT_ALGO_CONFIGS.map((algo) => {
+                  const isSelected = selectedSortAlgos.includes(algo.id);
+                  return (
+                    <button
+                      key={algo.id}
+                      onClick={() => toggleSortAlgorithm(algo.id)}
+                      disabled={isRunning}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
+                        isSelected
+                          ? 'bg-theme-card text-theme-text border-theme-primary shadow-subtle'
+                          : 'bg-theme-bg/60 text-theme-text-muted/60 border-theme-border hover:text-theme-text'
+                      } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: isSelected ? algo.color : '#64748b' }}
+                      />
+                      <span>{algo.name}</span>
+                      <span className="text-[10px] text-theme-text-muted opacity-70">
+                        {algo.complexity}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {/* Enable Custom Algorithm Toggle Button */}
+                <button
+                  onClick={() => {
+                    setEnableCustomAlgo(!enableCustomAlgo);
+                    setCustomCodeError(null);
+                  }}
+                  disabled={isRunning}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-2 border ${
+                    enableCustomAlgo
+                      ? 'bg-rose-500/15 text-rose-400 border-rose-500 shadow-subtle'
+                      : 'bg-theme-bg/60 text-theme-text-muted hover:text-theme-text border-theme-border'
+                  } ${isRunning ? 'cursor-not-allowed opacity-60' : ''}`}
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>Enable Custom Algorithm</span>
+                  {enableCustomAlgo && (
+                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse ml-0.5" />
+                  )}
+                </button>
+              </>
             ) : (
               SEARCH_ALGO_CONFIGS.map((algo) => {
                 const isSelected = selectedSearchAlgos.includes(algo.id);
@@ -332,7 +380,7 @@ export function BenchmarkLab() {
 
           <button
             onClick={handleRunBenchmark}
-            disabled={isRunning || !activeAlgos.length}
+            disabled={isRunning || (!activeAlgos.length && !enableCustomAlgo)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all shadow-subtle ${
               isRunning
                 ? 'bg-amber-600/60 text-white cursor-wait'
@@ -353,6 +401,84 @@ export function BenchmarkLab() {
           </button>
         </div>
       </div>
+
+      {/* Monaco Code Sandbox */}
+      {benchmarkMode === 'sorting' && enableCustomAlgo && (
+        <div className="bg-theme-surface rounded-xl border border-rose-500/30 p-5 shadow-subtle space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-theme-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <Code2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-mono uppercase tracking-wider font-semibold text-theme-text flex items-center gap-2">
+                  <span>Custom Algorithm Sandbox</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 lowercase">
+                    arr: number[]
+                  </span>
+                </h3>
+                <p className="text-[11px] text-theme-text-muted mt-0.5 font-sans">
+                  Write your custom sorting algorithm below. You must return the sorted array. Evaluated securely inside the Web Worker.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setCustomCode(DEFAULT_CUSTOM_CODE);
+                setCustomCodeError(null);
+              }}
+              disabled={isRunning}
+              className="px-2.5 py-1 text-xs font-mono rounded bg-theme-bg border border-theme-border text-theme-text-muted hover:text-theme-text transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+              title="Reset code template"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset Template</span>
+            </button>
+          </div>
+
+          {/* Monaco Editor Canvas */}
+          <div className="rounded-lg border border-theme-border overflow-hidden shadow-inner bg-[#1e1e1e]">
+            <Editor
+              height="300px"
+              defaultLanguage="javascript"
+              theme="vs-dark"
+              value={customCode}
+              onChange={(value) => {
+                setCustomCode(value || '');
+                if (customCodeError) setCustomCodeError(null);
+              }}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 2,
+                padding: { top: 10, bottom: 10 }
+              }}
+            />
+          </div>
+
+          {/* Clean Red Error Banner */}
+          {customCodeError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3.5 rounded-lg text-xs font-mono flex items-start gap-2.5 shadow-subtle">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="font-bold flex items-center gap-2">
+                  <span>Evaluation Error</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 uppercase font-mono">
+                    Halted
+                  </span>
+                </div>
+                <div className="text-red-300 font-sans text-xs leading-relaxed">
+                  {customCodeError}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Live Running HUD / Progress Bar */}
       {isRunning && progressInfo && (
@@ -481,6 +607,19 @@ export function BenchmarkLab() {
                         strokeWidth={2.5}
                         dot={{ r: 4, fill: '#06b6d4' }}
                         activeDot={{ r: 7 }}
+                      />
+                    )}
+
+                    {/* Custom User Sorting Algorithm Line */}
+                    {enableCustomAlgo && (
+                      <Line
+                        type="monotone"
+                        dataKey="custom"
+                        name="Custom Algorithm (Physical)"
+                        stroke="#f43f5e"
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: '#f43f5e' }}
+                        activeDot={{ r: 8 }}
                       />
                     )}
 
@@ -615,6 +754,7 @@ export function BenchmarkLab() {
                       {selectedSortAlgos.includes('bubble') && <th className="py-2.5 px-3">Bubble Sort (ms)</th>}
                       {selectedSortAlgos.includes('quick') && <th className="py-2.5 px-3">Quick Sort (ms)</th>}
                       {selectedSortAlgos.includes('merge') && <th className="py-2.5 px-3">Merge Sort (ms)</th>}
+                      {enableCustomAlgo && <th className="py-2.5 px-3 text-rose-400">Custom Sort (ms)</th>}
                     </>
                   ) : (
                     <>
@@ -632,6 +772,7 @@ export function BenchmarkLab() {
                     if (row.bubble !== undefined) times.push({ name: 'Bubble', val: row.bubble });
                     if (row.quick !== undefined) times.push({ name: 'Quick', val: row.quick });
                     if (row.merge !== undefined) times.push({ name: 'Merge', val: row.merge });
+                    if (row.custom !== undefined) times.push({ name: 'Custom', val: row.custom });
                   } else {
                     if (row.linear !== undefined) times.push({ name: 'Linear', val: row.linear });
                     if (row.binary !== undefined) times.push({ name: 'Binary', val: row.binary });
@@ -659,6 +800,11 @@ export function BenchmarkLab() {
                           {selectedSortAlgos.includes('merge') && (
                             <td className="py-2.5 px-3 text-cyan-300">
                               {row.merge !== undefined ? `${row.merge.toFixed(2)} ms` : '-'}
+                            </td>
+                          )}
+                          {enableCustomAlgo && (
+                            <td className="py-2.5 px-3 text-rose-400 font-bold">
+                              {row.custom !== undefined ? `${row.custom.toFixed(2)} ms` : '-'}
                             </td>
                           )}
                         </>

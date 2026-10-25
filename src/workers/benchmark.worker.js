@@ -31,13 +31,27 @@ function warmupV8() {
   rawLinearSearch(sortedDummy, 250);
 }
 
-// Handle messages from the main thread
 self.onmessage = function (event) {
   const {
     mode = 'sorting',
     algorithms,
-    sizes
+    sizes,
+    customCode
   } = event.data || {};
+
+  // Try to compile user's custom algorithm if provided
+  let userSortFunction = null;
+  if (event.data && event.data.customCode) {
+    try {
+      userSortFunction = new Function('arr', event.data.customCode);
+    } catch (error) {
+      self.postMessage({
+        type: 'error',
+        message: `Syntax Error in Custom Code: ${error.message || error}`
+      });
+      return;
+    }
+  }
 
   // 1. JIT Warmup
   self.postMessage({ type: 'status', message: 'Warming up V8 JIT compiler...' });
@@ -110,7 +124,7 @@ self.onmessage = function (event) {
   const sortSizes = sizes || [1000, 5000, 10000, 25000];
   const sortAlgos = algorithms || ['bubble', 'merge', 'quick'];
   const results = [];
-  const totalTasks = sortSizes.length * sortAlgos.length;
+  const totalTasks = sortSizes.length * (sortAlgos.length + (userSortFunction ? 1 : 0));
   let completedTasks = 0;
 
   for (let sIdx = 0; sIdx < sortSizes.length; sIdx++) {
@@ -141,6 +155,34 @@ self.onmessage = function (event) {
 
       const durationMs = Number((endTime - startTime).toFixed(3));
       resultRow[algoKey] = durationMs;
+
+      completedTasks++;
+    }
+
+    // Benchmark custom user algorithm if provided
+    if (userSortFunction) {
+      self.postMessage({
+        type: 'progress',
+        currentSize: size,
+        currentAlgorithm: 'custom',
+        progressPercent: Math.round((completedTasks / totalTasks) * 100)
+      });
+
+      const inputCopy = [...baseDataset];
+      try {
+        const startTime = performance.now();
+        userSortFunction(inputCopy);
+        const endTime = performance.now();
+
+        const durationMs = Number((endTime - startTime).toFixed(3));
+        resultRow.custom = durationMs;
+      } catch (runtimeErr) {
+        self.postMessage({
+          type: 'error',
+          message: `Runtime Error: ${runtimeErr.message || runtimeErr}`
+        });
+        return; // Halt worker
+      }
 
       completedTasks++;
     }

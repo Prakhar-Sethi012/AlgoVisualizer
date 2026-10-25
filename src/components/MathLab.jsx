@@ -177,11 +177,29 @@ export function MathLab() {
             </div>
           </div>
 
+          {/* Beginner-Friendly Intuitive Analogy */}
+          {result.beginnerExplanation && (
+            <div className="bg-gradient-to-r from-theme-primary/10 via-theme-surface to-theme-surface rounded-xl border border-theme-primary/30 p-5 shadow-subtle space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-mono uppercase tracking-wider font-semibold text-theme-primary flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-theme-primary" />
+                  <span>Beginner Analogy • Intuitive Takeaway</span>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-theme-primary/15 text-theme-primary border border-theme-primary/25">
+                  {result.caseName} Analogy
+                </span>
+              </div>
+              <p className="text-base sm:text-lg font-sans leading-relaxed text-theme-text font-medium">
+                "{result.beginnerExplanation}"
+              </p>
+            </div>
+          )}
+
           {/* Step-by-Step Mathematical Explanation */}
           <div className="bg-theme-surface rounded-xl border border-theme-border p-5 shadow-subtle space-y-2">
             <div className="text-xs font-mono uppercase tracking-wider font-semibold text-theme-text flex items-center gap-2">
               <Info className="w-4 h-4 text-theme-primary" />
-              <span>Mathematical Proof & Explanation</span>
+              <span>Formal Mathematical Proof & Explanation</span>
             </div>
             <p className="text-sm font-sans leading-relaxed text-theme-text-muted">
               {result.explanation}

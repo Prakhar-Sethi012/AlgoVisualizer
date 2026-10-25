@@ -105,6 +105,7 @@ export function solveRecurrence(inputString) {
   let complexityFormatted = '';
   let interpretation = '';
   let explanation = '';
+  let beginnerExplanation = '';
 
   // Case 1: log_b(a) > d  =>  O(n^(log_b a))
   if (diff > epsilon) {
@@ -118,6 +119,7 @@ export function solveRecurrence(inputString) {
       complexityFormatted = `O(n<sup>${logDisplay}</sup>) [O(n<sup>log_${b}(${a})</sup>)]`;
     }
     interpretation = 'Leaves Dominate (Bottom-heavy)';
+    beginnerExplanation = 'The problem multiplies so fast that most of the work happens at the very bottom of the tree. Think of it like a pyramid scheme: the people at the bottom are doing all the heavy lifting.';
     explanation = `Since log_${b}(${a}) ≈ ${logDisplay} is strictly greater than d (${d}), the subproblem leaves dominate the computation cost. By Case 1 of the Master Theorem, the overall runtime is determined by the total number of leaves: T(n) = Θ(n^(log_${b}(${a}))) = ${complexity}.`;
   }
   // Case 2: log_b(a) == d  =>  O(n^d * log n)
@@ -134,6 +136,7 @@ export function solveRecurrence(inputString) {
       complexityFormatted = `O(n<sup>${d}</sup> log n)`;
     }
     interpretation = 'Balanced Work (Equal work across all tree levels)';
+    beginnerExplanation = 'Cutting the problem in half saves you time, but having to solve both halves cancels out the savings. The work is perfectly balanced across every step, so we just multiply the work per step by the number of steps.';
     explanation = `Since log_${b}(${a}) ≈ ${logDisplay} equals d (${d}), the non-recursive work performed at every level of the recursion tree is identical (each level costs Θ(n^${d})). Since there are log_${b}(n) levels in the tree, by Case 2 of the Master Theorem: T(n) = Θ(n^${d} log n) = ${complexity}.`;
   }
   // Case 3: log_b(a) < d  =>  O(n^d)
@@ -150,6 +153,7 @@ export function solveRecurrence(inputString) {
       complexityFormatted = `O(n<sup>${d}</sup>)`;
     }
     interpretation = 'Root Dominates (Top-heavy)';
+    beginnerExplanation = 'The problem shrinks so quickly that the very first step takes the most effort. Think of it like chopping down a tree: the first cut is massive, but chopping the branches gets easier and easier.';
     explanation = `Since log_${b}(${a}) ≈ ${logDisplay} is strictly less than d (${d}), the root node division/combination cost dwarfs the work done in subproblems. By Case 3 of the Master Theorem, the top-level work dominates: T(n) = Θ(n^${d}) = ${complexity}.`;
   }
 
@@ -199,6 +203,7 @@ export function solveRecurrence(inputString) {
     complexity,
     complexityFormatted,
     interpretation,
+    beginnerExplanation,
     explanation,
     levelRatio: Number(levelRatio.toFixed(3)),
     recursionTree

@@ -28,6 +28,9 @@ const LinkedListView = lazy(() =>
 const TreeView = lazy(() =>
   import('./components/DataStructures/TreeView').then((m) => ({ default: m.TreeView }))
 );
+const ExpressionConverterView = lazy(() =>
+  import('./components/DataStructures/ExpressionConverterView').then((m) => ({ default: m.ExpressionConverterView }))
+);
 const GraphView = lazy(() =>
   import('./components/DataStructures/GraphView').then((m) => ({ default: m.GraphView }))
 );
@@ -87,6 +90,8 @@ export default function App() {
         }`;
       case 'trees':
         return '/ Trees / AVL Tree (Self-Balancing Rotations)';
+      case 'equation-converter':
+        return '/ Trees / Equation Converter (Expression Tree Graph)';
       case 'graphs':
         return '/ Graphs / Dijkstra & Kruskal MST';
       case 'benchmark':
@@ -231,6 +236,18 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setCurrentView('equation-converter')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                currentView === 'equation-converter'
+                  ? 'bg-theme-card text-pink-400 font-semibold shadow-subtle border border-theme-border'
+                  : 'text-theme-text-muted hover:text-theme-text'
+              }`}
+            >
+              <Calculator className="w-3 h-3 text-pink-400" />
+              <span className="hidden sm:inline">Converter</span>
+            </button>
+
+            <button
               onClick={() => setCurrentView('graphs')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
                 currentView === 'graphs'
@@ -294,6 +311,8 @@ export default function App() {
                 )
               ) : currentView === 'trees' ? (
                 <TreeView />
+              ) : currentView === 'equation-converter' ? (
+                <ExpressionConverterView />
               ) : currentView === 'graphs' ? (
                 <GraphView />
               ) : currentView === 'benchmark' ? (

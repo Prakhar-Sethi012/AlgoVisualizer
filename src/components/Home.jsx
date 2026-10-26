@@ -149,7 +149,7 @@ export function Home({ onNavigate }) {
           <span>Specialized Data Structure Modules</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
             onClick={() => onNavigate('trees')}
             className="p-4 rounded-xl bg-theme-surface border border-theme-border hover:border-purple-400/50 hover:bg-theme-surface-hover transition-all text-left flex items-start gap-3 group"
@@ -161,6 +161,21 @@ export function Home({ onNavigate }) {
               <div className="text-sm font-bold text-theme-text font-sans">AVL Trees</div>
               <div className="text-[11px] text-theme-text-muted mt-0.5">
                 Physical LL, RR, LR, RL balancing rotations with coordinate recalculation.
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onNavigate('equation-converter')}
+            className="p-4 rounded-xl bg-theme-surface border border-theme-border hover:border-pink-400/50 hover:bg-theme-surface-hover transition-all text-left flex items-start gap-3 group"
+          >
+            <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20 group-hover:scale-105 transition-transform">
+              <Calculator className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-theme-text font-sans">Equation Converter</div>
+              <div className="text-[11px] text-theme-text-muted mt-0.5">
+                Expression Tree AST, Shunting-Yard builder, Postfix (RPN) &amp; Prefix tracers.
               </div>
             </div>
           </button>

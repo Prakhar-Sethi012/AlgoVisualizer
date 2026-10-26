@@ -59,6 +59,7 @@ export const ALGORITHM_CATEGORIES = [
     icon: GitFork,
     algorithms: [
       { id: 'avl-tree', name: 'AVL Tree (Self-Balancing)', implemented: true, tag: 'AVL' },
+      { id: 'expression-tree', name: 'Equation Converter (AST)', implemented: true, tag: 'RPN' },
       { id: 'bst-operations', name: 'BST Operations', implemented: false, tag: 'Next Phase' },
       { id: 'tree-traversal', name: 'In/Pre/Post Order', implemented: false, tag: 'Next Phase' },
     ]
@@ -193,6 +194,25 @@ export function Navigation({
         </button>
 
         <button
+          onClick={() => onViewChange && onViewChange('equation-converter')}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+            currentView === 'equation-converter'
+              ? 'bg-theme-primary text-slate-950 shadow-subtle'
+              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Calculator className="w-3.5 h-3.5 text-pink-400" />
+            <span>Equation Converter</span>
+          </div>
+          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+            currentView === 'equation-converter' ? 'bg-black/10' : 'bg-pink-500/10 text-pink-400 border border-pink-500/20'
+          }`}>
+            RPN / AST
+          </span>
+        </button>
+
+        <button
           onClick={() => onViewChange && onViewChange('graphs')}
           className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
             currentView === 'graphs'
@@ -273,7 +293,7 @@ export function Navigation({
                   const isSelected = isDS
                     ? currentView === 'data-structures' && selectedDS === algo.id
                     : isTree
-                    ? currentView === 'trees' && algo.id === 'avl-tree'
+                    ? (algo.id === 'expression-tree' ? currentView === 'equation-converter' : currentView === 'trees' && algo.id === 'avl-tree')
                     : isGraph
                     ? currentView === 'graphs' && (algo.id === 'dijkstra' || algo.id === 'kruskal')
                     : currentView === 'visualizer' && selectedAlgo === algo.id;
@@ -287,7 +307,11 @@ export function Navigation({
                             if (onViewChange) onViewChange('data-structures');
                             if (onSelectDS) onSelectDS(algo.id);
                           } else if (isTree) {
-                            if (onViewChange) onViewChange('trees');
+                            if (algo.id === 'expression-tree') {
+                              if (onViewChange) onViewChange('equation-converter');
+                            } else {
+                              if (onViewChange) onViewChange('trees');
+                            }
                           } else if (isGraph) {
                             if (onViewChange) onViewChange('graphs');
                           } else {

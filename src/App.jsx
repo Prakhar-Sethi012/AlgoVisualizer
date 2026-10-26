@@ -22,6 +22,9 @@ const VisualizerView = lazy(() =>
 const StackQueueView = lazy(() =>
   import('./components/DataStructures/StackQueueView').then((m) => ({ default: m.StackQueueView }))
 );
+const LinkedListView = lazy(() =>
+  import('./components/DataStructures/LinkedListView').then((m) => ({ default: m.LinkedListView }))
+);
 const TreeView = lazy(() =>
   import('./components/DataStructures/TreeView').then((m) => ({ default: m.TreeView }))
 );
@@ -50,7 +53,7 @@ function RouteFallback() {
 export default function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'visualizer' | 'data-structures' | 'trees' | 'graphs' | 'benchmark' | 'recurrence'
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
-  const [selectedDS, setSelectedDS] = useState('stack');
+  const [selectedDS, setSelectedDS] = useState('linked-list');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -75,7 +78,13 @@ export default function App() {
       case 'home':
         return '/ Overview / Theory vs. Reality';
       case 'data-structures':
-        return `/ Data Structures / ${selectedDS === 'stack' ? 'Stack (LIFO)' : 'Queue (FIFO)'}`;
+        return `/ Linear Structures / ${
+          selectedDS === 'linked-list'
+            ? 'Linked List (Singly, Doubly, Circular)'
+            : selectedDS === 'stack'
+            ? 'Stack (LIFO)'
+            : 'Queue (FIFO)'
+        }`;
       case 'trees':
         return '/ Trees / AVL Tree (Self-Balancing Rotations)';
       case 'graphs':
@@ -205,7 +214,7 @@ export default function App() {
               }`}
             >
               <Layers className="w-3 h-3 text-cyan-400" />
-              <span className="hidden sm:inline">Stack & Queue</span>
+              <span className="hidden sm:inline">Linear Structures</span>
             </button>
 
             <button
@@ -270,7 +279,18 @@ export default function App() {
                   onAlgoChange={setSelectedAlgo}
                 />
               ) : currentView === 'data-structures' ? (
-                <StackQueueView initialMode={selectedDS} />
+                selectedDS === 'linked-list' ? (
+                  <LinkedListView
+                    onSwitchStructure={(ds) => setSelectedDS(ds)}
+                    currentStructure={selectedDS}
+                  />
+                ) : (
+                  <StackQueueView
+                    initialMode={selectedDS}
+                    onSwitchStructure={(ds) => setSelectedDS(ds)}
+                    currentStructure={selectedDS}
+                  />
+                )
               ) : currentView === 'trees' ? (
                 <TreeView />
               ) : currentView === 'graphs' ? (

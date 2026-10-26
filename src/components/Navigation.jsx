@@ -44,9 +44,10 @@ export const ALGORITHM_CATEGORIES = [
   },
   {
     id: 'data-structures',
-    name: 'Data Structures',
+    name: 'Linear Structures',
     icon: Layers,
     algorithms: [
+      { id: 'linked-list', name: 'Linked Lists', implemented: true, tag: 'Nodes' },
       { id: 'stack', name: 'Stack (LIFO)', implemented: true, tag: 'LIFO' },
       { id: 'queue', name: 'Queue (FIFO)', implemented: true, tag: 'FIFO' },
     ]
@@ -162,12 +163,12 @@ export function Navigation({
         >
           <div className="flex items-center gap-2">
             <Box className="w-3.5 h-3.5" />
-            <span>Stack & Queue</span>
+            <span>Linear Structures</span>
           </div>
           <span className={`text-[9px] px-1.5 py-0.2 rounded ${
             currentView === 'data-structures' ? 'bg-black/10' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
           }`}>
-            AnimatePresence
+            Lists & Queues
           </span>
         </button>
 

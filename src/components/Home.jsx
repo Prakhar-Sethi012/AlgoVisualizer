@@ -188,9 +188,9 @@ export function Home({ onNavigate }) {
               <Layers className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-bold text-theme-text font-sans">Stack & Queue</div>
+              <div className="text-sm font-bold text-theme-text font-sans">Linear Structures</div>
               <div className="text-[11px] text-theme-text-muted mt-0.5">
-                LIFO Push/Pop and FIFO Enqueue/Dequeue with Framer Motion AnimatePresence.
+                Linked Lists (Singly, Doubly, Circular), Stack (LIFO), and Queue (FIFO) with amber pointer traversal.
               </div>
             </div>
           </button>

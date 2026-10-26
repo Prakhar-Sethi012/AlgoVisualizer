@@ -17,7 +17,7 @@ import {
 
 const MAX_CAPACITY = 10;
 
-export function StackQueueView({ initialMode = 'stack' }) {
+export function StackQueueView({ initialMode = 'stack', onSwitchStructure, currentStructure }) {
   const [mode, setMode] = useState(initialMode); // 'stack' | 'queue'
   const [inputValue, setInputValue] = useState('');
   const [items, setItems] = useState([
@@ -116,6 +116,14 @@ export function StackQueueView({ initialMode = 'stack' }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
           <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={() => onSwitchStructure && onSwitchStructure('linked-list')}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Linked Lists</span>
+            </button>
+
             <button
               onClick={() => handleModeSwitch('stack')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${

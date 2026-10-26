@@ -44,6 +44,7 @@ const SORT_ALGO_CONFIGS = [
   { id: 'bubble', name: 'Bubble Sort', complexity: 'O(n²)', color: '#f59e0b', defaultActive: true },
   { id: 'quick', name: 'Quick Sort', complexity: 'O(n log n)', color: '#a855f7', defaultActive: true },
   { id: 'merge', name: 'Merge Sort', complexity: 'O(n log n)', color: '#06b6d4', defaultActive: true },
+  { id: 'heap', name: 'Heap Sort', complexity: 'O(n log n)', color: '#10b981', defaultActive: true },
 ];
 
 const SEARCH_ALGO_CONFIGS = [
@@ -100,7 +101,7 @@ function MinimalChartTooltip({ active, payload, label }) {
 
 export function BenchmarkLab() {
   const [benchmarkMode, setBenchmarkMode] = useState('sorting'); // 'sorting' | 'searching'
-  const [selectedSortAlgos, setSelectedSortAlgos] = useState(['bubble', 'quick', 'merge']);
+  const [selectedSortAlgos, setSelectedSortAlgos] = useState(['bubble', 'quick', 'merge', 'heap']);
   const [selectedSearchAlgos, setSelectedSearchAlgos] = useState(['linear', 'binary']);
   const [isRunning, setIsRunning] = useState(false);
   const [showTheoryOverlay, setShowTheoryOverlay] = useState(true);

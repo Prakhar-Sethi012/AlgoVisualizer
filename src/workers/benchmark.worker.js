@@ -1,13 +1,15 @@
 import { rawBubbleSort } from '../core/algorithms/raw/bubbleSort.js';
 import { rawMergeSort } from '../core/algorithms/raw/mergeSort.js';
 import { rawQuickSort } from '../core/algorithms/raw/quickSort.js';
+import { rawHeapSort } from '../core/algorithms/raw/heapSort.js';
 import { rawLinearSearch } from '../core/algorithms/raw/linearSearch.js';
 import { rawBinarySearch } from '../core/algorithms/raw/binarySearch.js';
 
 const SORT_FUNCTIONS = {
   bubble: rawBubbleSort,
   merge: rawMergeSort,
-  quick: rawQuickSort
+  quick: rawQuickSort,
+  heap: rawHeapSort
 };
 
 const SEARCH_FUNCTIONS = {
@@ -23,6 +25,7 @@ function warmupV8() {
   const dummy = Array.from({ length: 500 }, () => Math.floor(Math.random() * 10000));
   rawQuickSort([...dummy]);
   rawMergeSort([...dummy]);
+  rawHeapSort([...dummy]);
   rawBubbleSort(dummy.slice(0, 100));
 
   const sortedDummy = new Int32Array(500);
@@ -122,7 +125,7 @@ self.onmessage = function (event) {
 
   // ================= SORTING BENCHMARK (1k - 25k) =================
   const sortSizes = sizes || [1000, 5000, 10000, 25000];
-  const sortAlgos = algorithms || ['bubble', 'merge', 'quick'];
+  const sortAlgos = algorithms || ['bubble', 'merge', 'quick', 'heap'];
   const results = [];
   const totalTasks = sortSizes.length * (sortAlgos.length + (userSortFunction ? 1 : 0));
   let completedTasks = 0;

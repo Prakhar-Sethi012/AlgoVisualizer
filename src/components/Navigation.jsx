@@ -29,6 +29,7 @@ export const ALGORITHM_CATEGORIES = [
       { id: 'bubble-sort', name: 'Bubble Sort', implemented: true, tag: 'O(n²)' },
       { id: 'quick-sort', name: 'Quick Sort', implemented: true, tag: 'O(n log n)' },
       { id: 'merge-sort', name: 'Merge Sort', implemented: true, tag: 'O(n log n)' },
+      { id: 'heap-sort', name: 'Heap Sort', implemented: true, tag: 'O(n log n)' },
       { id: 'selection-sort', name: 'Selection Sort', implemented: false, tag: 'Next Phase' },
       { id: 'insertion-sort', name: 'Insertion Sort', implemented: false, tag: 'Next Phase' },
     ]

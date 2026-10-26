@@ -108,13 +108,14 @@ export function generateTheoreticalCurve(empiricalData, complexityType) {
  * @param {string[]} algorithms - ['bubble', 'quick', 'merge']
  * @returns {Array<Object>} Enriched dataset containing [algo + '_theory'] fields
  */
-export function enrichDatasetWithTheory(benchmarkResults, algorithms = ['bubble', 'quick', 'merge']) {
+export function enrichDatasetWithTheory(benchmarkResults, algorithms = ['bubble', 'quick', 'merge', 'heap']) {
   if (!benchmarkResults || !benchmarkResults.length) return [];
 
   const algoComplexityMap = {
     bubble: 'n^2',
     quick: 'nlogn',
     merge: 'nlogn',
+    heap: 'nlogn',
     linear: 'n',
     binary: 'logn'
   };

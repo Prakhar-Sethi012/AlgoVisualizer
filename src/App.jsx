@@ -98,6 +98,7 @@ export default function App() {
           'bubble-sort': 'Sorting / Bubble Sort',
           'quick-sort': 'Sorting / Quick Sort',
           'merge-sort': 'Sorting / Merge Sort',
+          'heap-sort': 'Sorting / Heap Sort',
           'linear-search': 'Searching / Linear Search',
           'binary-search': 'Searching / Binary Search'
         };

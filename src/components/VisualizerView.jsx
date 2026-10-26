@@ -17,6 +17,7 @@ import {
 import { bubbleSort } from '../core/algorithms/sorting/bubbleSort';
 import { quickSort } from '../core/algorithms/sorting/quickSort';
 import { mergeSort } from '../core/algorithms/sorting/mergeSort';
+import { heapSort } from '../core/algorithms/sorting/heapSort';
 import { linearSearch } from '../core/algorithms/searching/linearSearch';
 import { binarySearch } from '../core/algorithms/searching/binarySearch';
 
@@ -53,6 +54,17 @@ export const ALGORITHM_REGISTRY = {
     stable: 'Yes',
     inPlace: 'No',
     description: 'Divides array into single elements, then merges sorted subarrays by overwriting elements into the primary array from auxiliary buffers.'
+  },
+  'heap-sort': {
+    id: 'heap-sort',
+    category: 'sorting',
+    name: 'Heap Sort',
+    generator: heapSort,
+    timeComplexity: 'O(n log n)',
+    spaceComplexity: 'O(1)',
+    stable: 'No',
+    inPlace: 'Yes',
+    description: 'Builds a Binary Max-Heap in O(n) time, then repeatedly extracts the root maximum to the sorted end in O(n log n) time.'
   },
   'linear-search': {
     id: 'linear-search',
@@ -328,24 +340,48 @@ export function VisualizerView({
         <div>
           {/* Minimalist Algorithm Tabs / Selector */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            {Object.values(ALGORITHM_REGISTRY).map((algo) => {
-              const isActive = selectedAlgoId === algo.id;
-              const isSearchTab = algo.category === 'searching';
-              return (
-                <button
-                  key={algo.id}
-                  onClick={() => handleAlgorithmSwitch(algo.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all flex items-center gap-1.5 border ${
-                    isActive
-                      ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                      : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
-                  }`}
-                >
-                  {isSearchTab ? <Search className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
-                  <span>{algo.name}</span>
-                </button>
-              );
-            })}
+            {/* Quick Dropdown Select */}
+            <div className="flex items-center gap-2 mr-2">
+              <select
+                value={selectedAlgoId}
+                onChange={(e) => handleAlgorithmSwitch(e.target.value)}
+                className="text-xs bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1.5 text-theme-text font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-theme-primary cursor-pointer"
+                title="Select Algorithm"
+              >
+                <optgroup label="Sorting Algorithms">
+                  <option value="bubble-sort">Bubble Sort (O(n²))</option>
+                  <option value="quick-sort">Quick Sort (O(n log n))</option>
+                  <option value="merge-sort">Merge Sort (O(n log n))</option>
+                  <option value="heap-sort">Heap Sort (O(n log n))</option>
+                </optgroup>
+                <optgroup label="Searching Algorithms">
+                  <option value="linear-search">Linear Search (O(n))</option>
+                  <option value="binary-search">Binary Search (O(log n))</option>
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Quick Pills */}
+            <div className="hidden sm:flex flex-wrap items-center gap-1.5">
+              {Object.values(ALGORITHM_REGISTRY).map((algo) => {
+                const isActive = selectedAlgoId === algo.id;
+                const isSearchTab = algo.category === 'searching';
+                return (
+                  <button
+                    key={algo.id}
+                    onClick={() => handleAlgorithmSwitch(algo.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all flex items-center gap-1.5 border ${
+                      isActive
+                        ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
+                        : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                    }`}
+                  >
+                    {isSearchTab ? <Search className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
+                    <span>{algo.name}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-theme-text-muted">
@@ -471,7 +507,9 @@ export function VisualizerView({
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-algo-comparing inline-block" />
-                <span className="text-theme-text-muted">Compare</span>
+                <span className="text-theme-text-muted">
+                  {selectedAlgoId === 'heap-sort' ? 'Children' : 'Compare'}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-algo-swapped inline-block" />
@@ -479,7 +517,9 @@ export function VisualizerView({
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-algo-pivot inline-block" />
-                <span className="text-theme-text-muted">Pivot</span>
+                <span className="text-theme-text-muted">
+                  {selectedAlgoId === 'heap-sort' ? 'Root (Pivot)' : 'Pivot'}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-algo-overwriting inline-block" />

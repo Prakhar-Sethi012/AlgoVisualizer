@@ -87,9 +87,14 @@ export function ExpressionConverterView() {
         if (entry.contentRect) {
           const { width, height } = entry.contentRect;
           if (width > 0 && height > 0) {
-            setContainerDimensions({
-              width: Math.max(width, 380),
-              height: Math.max(height, 380)
+            setContainerDimensions((prev) => {
+              if (Math.abs(prev.width - width) < 4 && Math.abs(prev.height - height) < 4) {
+                return prev;
+              }
+              return {
+                width: Math.max(width, 380),
+                height: Math.max(height, 380)
+              };
             });
           }
         }
@@ -116,6 +121,31 @@ export function ExpressionConverterView() {
       containerDimensions.height
     );
   }, [treeRoot, containerDimensions]);
+
+  // Memoized SVG Edge array to prevent layout thrashing and repaints
+  const edgeElements = useMemo(() => {
+    return edges.map((edge) => {
+      const isChildActive = activeNodeId === edge.childId;
+      const isParentActive = activeNodeId === edge.parentId;
+      const isHighlighted = isChildActive || isParentActive;
+      return (
+        <line
+          key={edge.id}
+          x1={edge.x1}
+          y1={edge.y1}
+          x2={edge.x2}
+          y2={edge.y2}
+          stroke={isHighlighted ? '#ec4899' : 'var(--color-border)'}
+          strokeWidth={isHighlighted ? 3.5 : 2}
+          strokeOpacity={isHighlighted ? 1 : 0.6}
+          style={{
+            transition: 'x1 300ms ease, y1 300ms ease, x2 300ms ease, y2 300ms ease, stroke 300ms ease, stroke-width 300ms ease',
+            willChange: 'x1, y1, x2, y2'
+          }}
+        />
+      );
+    });
+  }, [edges, activeNodeId]);
 
   // Stop running animation
   const stopExecution = () => {
@@ -524,23 +554,7 @@ export function ExpressionConverterView() {
                 <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
               </linearGradient>
             </defs>
-            {edges.map((edge) => {
-              const isChildActive = activeNodeId === edge.childId;
-              const isParentActive = activeNodeId === edge.parentId;
-              return (
-                <line
-                  key={edge.id}
-                  x1={edge.x1}
-                  y1={edge.y1}
-                  x2={edge.x2}
-                  y2={edge.y2}
-                  stroke={isChildActive || isParentActive ? '#ec4899' : 'var(--color-border)'}
-                  strokeWidth={isChildActive ? 3.5 : 2}
-                  strokeOpacity={isChildActive ? 1 : 0.6}
-                  className="transition-all duration-300"
-                />
-              );
-            })}
+            {edgeElements}
           </svg>
 
           {/* Foreground Animated Nodes */}
@@ -553,6 +567,7 @@ export function ExpressionConverterView() {
                 <motion.div
                   key={node.id}
                   layout
+                  layoutId={`expr-node-${node.id}`}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{
                     x: node.x - NODE_RADIUS,

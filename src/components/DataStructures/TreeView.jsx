@@ -64,9 +64,14 @@ export function TreeView() {
         if (entry.contentRect) {
           const { width, height } = entry.contentRect;
           if (width > 0 && height > 0) {
-            setContainerDimensions({
-              width: Math.max(width, 360),
-              height: Math.max(height, 360)
+            setContainerDimensions((prev) => {
+              if (Math.abs(prev.width - width) < 4 && Math.abs(prev.height - height) < 4) {
+                return prev;
+              }
+              return {
+                width: Math.max(width, 360),
+                height: Math.max(height, 360)
+              };
             });
           }
         }
@@ -91,7 +96,27 @@ export function TreeView() {
       containerDimensions.width,
       containerDimensions.height
     );
-  }, [treeState.root, containerDimensions]);
+  }, [treeState.root, containerDimensions.width, containerDimensions.height]);
+
+  // Memoized SVG Edge array to prevent layout thrashing and repaints
+  const edgeElements = useMemo(() => {
+    return edges.map((edge) => (
+      <line
+        key={edge.id}
+        x1={edge.x1}
+        y1={edge.y1}
+        x2={edge.x2}
+        y2={edge.y2}
+        stroke="#64748b"
+        strokeWidth={2}
+        strokeOpacity={0.4}
+        style={{
+          transition: 'x1 300ms ease, y1 300ms ease, x2 300ms ease, y2 300ms ease',
+          willChange: 'x1, y1, x2, y2'
+        }}
+      />
+    ));
+  }, [edges]);
 
   // Execute single generator step
   const handleStep = () => {
@@ -339,19 +364,7 @@ export function TreeView() {
         <div className="w-full h-full relative min-h-[360px] select-none">
           {/* Background SVG Edge Layer */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-            {edges.map((edge) => (
-              <line
-                key={edge.id}
-                x1={edge.x1}
-                y1={edge.y1}
-                x2={edge.x2}
-                y2={edge.y2}
-                stroke="#64748b"
-                strokeWidth={2}
-                strokeOpacity={0.4}
-                className="transition-all duration-300"
-              />
-            ))}
+            {edgeElements}
           </svg>
 
           {/* Foreground Animated Nodes with AnimatePresence */}
@@ -361,6 +374,7 @@ export function TreeView() {
                 <motion.div
                   key={node.id}
                   layout
+                  layoutId={`tree-node-${node.id}`}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{
                     x: node.x - NODE_RADIUS,

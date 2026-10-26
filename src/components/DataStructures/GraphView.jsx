@@ -73,9 +73,14 @@ export function GraphView() {
         if (entry.contentRect) {
           const { width, height } = entry.contentRect;
           if (width > 0 && height > 0) {
-            setDimensions({
-              width: Math.max(width, 340),
-              height: Math.max(height, 340)
+            setDimensions((prev) => {
+              if (Math.abs(prev.width - width) < 4 && Math.abs(prev.height - height) < 4) {
+                return prev;
+              }
+              return {
+                width: Math.max(width, 340),
+                height: Math.max(height, 340)
+              };
             });
           }
         }
@@ -311,6 +316,64 @@ export function GraphView() {
     };
   };
 
+  // Memoized SVG Edge array to prevent layout thrashing and repaints
+  const edgeElements = useMemo(() => {
+    return edges.map((edge) => {
+      const sourceNode = nodeMap[edge.source];
+      const targetNode = nodeMap[edge.target];
+      if (!sourceNode || !targetNode) return null;
+
+      const midX = (sourceNode.x + targetNode.x) / 2;
+      const midY = (sourceNode.y + targetNode.y) / 2;
+      const style = getEdgeStyle(edge);
+
+      return (
+        <g key={edge.id}>
+          {/* The Connecting Line */}
+          <line
+            x1={sourceNode.x}
+            y1={sourceNode.y}
+            x2={targetNode.x}
+            y2={targetNode.y}
+            stroke={style.stroke}
+            strokeWidth={style.strokeWidth}
+            strokeDasharray={style.strokeDasharray}
+            strokeOpacity={style.opacity}
+            style={{
+              transition: 'x1 300ms ease, y1 300ms ease, x2 300ms ease, y2 300ms ease, stroke 300ms ease, stroke-width 300ms ease, opacity 300ms ease',
+              willChange: 'x1, y1, x2, y2'
+            }}
+          />
+
+          {/* Edge Weight Badge Pill */}
+          <g transform={`translate(${midX}, ${midY})`}>
+            <rect
+              x="-13"
+              y="-10"
+              width="26"
+              height="20"
+              rx="5"
+              fill={style.badgeBg}
+              stroke={style.badgeBorder}
+              strokeWidth="1.5"
+              className="transition-colors duration-300 shadow-sm"
+            />
+            <text
+              x="0"
+              y="1"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={style.textColor}
+              className="text-[10px] font-mono font-bold select-none pointer-events-none"
+            >
+              {edge.weight}
+            </text>
+          </g>
+        </g>
+      );
+    });
+  }, [edges, nodeMap, visualState]);
+
   // Determine node styling
   const getNodeColorClass = (node) => {
     // 1. Active node extracted from queue
@@ -460,57 +523,7 @@ export function GraphView() {
           <div className="w-full h-full relative min-h-[360px]">
             {/* Background SVG Edge & Weight Layer */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-              {edges.map((edge) => {
-                const sourceNode = nodeMap[edge.source];
-                const targetNode = nodeMap[edge.target];
-                if (!sourceNode || !targetNode) return null;
-
-                const midX = (sourceNode.x + targetNode.x) / 2;
-                const midY = (sourceNode.y + targetNode.y) / 2;
-                const style = getEdgeStyle(edge);
-
-                return (
-                  <g key={edge.id}>
-                    {/* The Connecting Line */}
-                    <line
-                      x1={sourceNode.x}
-                      y1={sourceNode.y}
-                      x2={targetNode.x}
-                      y2={targetNode.y}
-                      stroke={style.stroke}
-                      strokeWidth={style.strokeWidth}
-                      strokeDasharray={style.strokeDasharray}
-                      strokeOpacity={style.opacity}
-                      className="transition-all duration-300"
-                    />
-
-                    {/* Edge Weight Badge Pill */}
-                    <g transform={`translate(${midX}, ${midY})`}>
-                      <rect
-                        x="-13"
-                        y="-10"
-                        width="26"
-                        height="20"
-                        rx="5"
-                        fill={style.badgeBg}
-                        stroke={style.badgeBorder}
-                        strokeWidth="1.5"
-                        className="transition-colors duration-300 shadow-sm"
-                      />
-                      <text
-                        x="0"
-                        y="1"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill={style.textColor}
-                        className="text-[10px] font-mono font-bold select-none pointer-events-none"
-                      >
-                        {edge.weight}
-                      </text>
-                    </g>
-                  </g>
-                );
-              })}
+              {edgeElements}
             </svg>
 
             {/* Foreground Animated Nodes with Framer Motion */}
@@ -519,6 +532,7 @@ export function GraphView() {
                 <motion.div
                   key={node.id}
                   layout
+                  layoutId={`graph-node-${node.id}`}
                   animate={{
                     x: node.x - NODE_RADIUS,
                     y: node.y - NODE_RADIUS

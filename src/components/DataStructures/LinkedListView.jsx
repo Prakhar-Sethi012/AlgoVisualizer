@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
@@ -13,12 +13,12 @@ import {
   Layers,
   ArrowRight,
   ArrowLeft,
-  CornerDownLeft,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  Hash,
-  Shuffle
+  Shuffle,
+  Compass,
+  Repeat
 } from 'lucide-react';
 
 const INITIAL_NODES = [
@@ -29,17 +29,20 @@ const INITIAL_NODES = [
   { id: 5, value: 89 }
 ];
 
+const NODE_WIDTH = 76;
+const NODE_HEIGHT = 58;
+
 export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-list' }) {
   // 'singly' | 'doubly' | 'circular'
   const [listType, setListType] = useState('singly');
   const [nodes, setNodes] = useState(INITIAL_NODES);
   const [inputValue, setInputValue] = useState('');
   const [deleteValue, setDeleteValue] = useState('');
-  const [speedMs, setSpeedMs] = useState(400);
+  const [speedMs, setSpeedMs] = useState(350);
 
   // Generator & Animation State
   const [statusMessage, setStatusMessage] = useState(
-    'Linked List initialized. Choose an operation to see pointer traversal in amber.'
+    'Linked List ready. Switch variants or choose an operation to watch animated pointer traversal.'
   );
   const [currentNodeIndex, setCurrentNodeIndex] = useState(-1);
   const [deletingIndex, setDeletingIndex] = useState(-1);
@@ -47,10 +50,9 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeStepDescription, setActiveStepDescription] = useState('Idle');
 
-  // SVG Coordinates for Circular Return Arrow
+  // Container Dimensions with ResizeObserver
   const containerRef = useRef(null);
-  const nodeRefs = useRef({});
-  const [circularPathData, setCircularPathData] = useState(null);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 460 });
 
   // Generator reference and running timeout
   const generatorRef = useRef(null);
@@ -65,50 +67,221 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
     };
   }, []);
 
-  // Update SVG return path for Circular Linked List
-  const updateCircularPath = useCallback(() => {
-    if (listType !== 'circular' || nodes.length === 0 || !containerRef.current) {
-      setCircularPathData(null);
-      return;
-    }
-
-    const firstEl = nodeRefs.current[nodes[0]?.id];
-    const lastEl = nodeRefs.current[nodes[nodes.length - 1]?.id];
-
-    if (!firstEl || !lastEl) {
-      setCircularPathData(null);
-      return;
-    }
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const firstRect = firstEl.getBoundingClientRect();
-    const lastRect = lastEl.getBoundingClientRect();
-
-    // Start point: bottom-right of last node
-    const startX = lastRect.right - containerRect.left - 18;
-    const startY = lastRect.bottom - containerRect.top;
-
-    // End point: bottom-left of head node
-    const endX = firstRect.left - containerRect.left + 24;
-    const endY = firstRect.bottom - containerRect.top;
-
-    // Curve height below nodes
-    const curveY = Math.max(startY, endY) + 42;
-
-    const path = `M ${startX} ${startY} C ${startX + 20} ${curveY}, ${endX - 20} ${curveY}, ${endX} ${endY + 6}`;
-    setCircularPathData({ path, startX, startY, endX, endY, curveY });
-  }, [listType, nodes]);
-
+  // Debounced Resize Observer to avoid layout thrashing
   useEffect(() => {
-    const timer = setTimeout(updateCircularPath, 150);
-    window.addEventListener('resize', updateCircularPath);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', updateCircularPath);
-    };
-  }, [nodes, listType, updateCircularPath]);
+    let resizeTimer = null;
 
-  // Stop running animation
+    function handleResize(width, height) {
+      if (width > 0 && height > 0) {
+        setDimensions((prev) => {
+          // Avoid triggering rerenders for subpixel noise (< 4px change)
+          if (Math.abs(prev.width - width) < 4 && Math.abs(prev.height - height) < 4) {
+            return prev;
+          }
+          return {
+            width: Math.max(width, 360),
+            height: Math.max(height, 420)
+          };
+        });
+      }
+    }
+
+    if (containerRef.current) {
+      const { clientWidth, clientHeight } = containerRef.current;
+      handleResize(clientWidth, clientHeight);
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          const { width, height } = entry.contentRect;
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            handleResize(width, height);
+          }, 60);
+        }
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (resizeTimer) clearTimeout(resizeTimer);
+    };
+  }, []);
+
+  // ==========================================================
+  // Layout Engine: Physical Radial Layout vs Linear Row Layout
+  // Wrapped in useMemo for extreme performance
+  // ==========================================================
+  const { layoutNodes, layoutEdges, centerPos, radius } = useMemo(() => {
+    const N = nodes.length;
+    const cx = dimensions.width / 2;
+    const cy = dimensions.height / 2;
+
+    if (N === 0) {
+      return {
+        layoutNodes: [],
+        layoutEdges: [],
+        centerPos: { cx, cy },
+        radius: 150
+      };
+    }
+
+    if (listType === 'circular') {
+      // ----------------------------------------------------
+      // RADIAL LAYOUT (Strict Mathematical Circle)
+      // cx = containerWidth / 2, cy = containerHeight / 2
+      // R = Math.max(150, nodes.length * 25) constrained to viewport
+      // angle = (i / N) * 2 * PI - (PI / 2)
+      // ----------------------------------------------------
+      const maxAvailableR = Math.min(dimensions.width / 2 - 65, dimensions.height / 2 - 60);
+      const computedR = Math.max(130, Math.min(maxAvailableR, Math.max(150, N * 25)));
+
+      const computedNodes = nodes.map((node, i) => {
+        const angle = (i / N) * 2 * Math.PI - Math.PI / 2; // 12 o'clock start
+        const x = cx + computedR * Math.cos(angle);
+        const y = cy + computedR * Math.sin(angle);
+        return {
+          ...node,
+          index: i,
+          x,
+          y,
+          angle
+        };
+      });
+
+      // Construct directed edges around the circle: node i -> (i+1)%N
+      const edges = computedNodes.map((src, i) => {
+        const target = computedNodes[(i + 1) % N];
+        const isClosingEdge = i === N - 1;
+
+        // Calculate boundary offsets so arrows touch the card edges nicely
+        const dx = target.x - src.x;
+        const dy = target.y - src.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        const offset = 32;
+        const x1 = src.x + ux * offset;
+        const y1 = src.y + uy * offset;
+        const x2 = target.x - ux * (offset + 6);
+        const y2 = target.y - uy * (offset + 6);
+
+        return {
+          id: `circ-edge-${src.id}-${target.id}`,
+          sourceIndex: i,
+          targetIndex: (i + 1) % N,
+          x1,
+          y1,
+          x2,
+          y2,
+          isClosingEdge
+        };
+      });
+
+      return {
+        layoutNodes: computedNodes,
+        layoutEdges: edges,
+        centerPos: { cx, cy },
+        radius: computedR
+      };
+    } else {
+      // ----------------------------------------------------
+      // LINEAR HORIZONTAL ROW LAYOUT (Singly & Doubly)
+      // ----------------------------------------------------
+      const nodeSpacing = Math.min(135, Math.max(95, (dimensions.width - 120) / Math.max(1, N)));
+      const totalWidth = (N - 1) * nodeSpacing;
+      const startX = Math.max(65, (dimensions.width - totalWidth) / 2);
+
+      const computedNodes = nodes.map((node, i) => {
+        const x = startX + i * nodeSpacing;
+        const y = cy;
+        return {
+          ...node,
+          index: i,
+          x,
+          y,
+          angle: 0
+        };
+      });
+
+      const edges = [];
+      for (let i = 0; i < N - 1; i++) {
+        const src = computedNodes[i];
+        const target = computedNodes[i + 1];
+        edges.push({
+          id: `linear-edge-${src.id}-${target.id}`,
+          sourceIndex: i,
+          targetIndex: i + 1,
+          x1: src.x + NODE_WIDTH / 2 - 6,
+          y1: cy,
+          x2: target.x - NODE_WIDTH / 2 + 6,
+          y2: cy,
+          isClosingEdge: false
+        });
+      }
+
+      return {
+        layoutNodes: computedNodes,
+        layoutEdges: edges,
+        centerPos: { cx, cy },
+        radius: 150
+      };
+    }
+  }, [nodes, listType, dimensions]);
+
+  // Memoized SVG Edge elements to prevent SVG layout thrashing
+  const edgeElements = useMemo(() => {
+    return layoutEdges.map((edge) => {
+      if (listType === 'circular') {
+        return (
+          <g key={edge.id}>
+            <line
+              x1={edge.x1}
+              y1={edge.y1}
+              x2={edge.x2}
+              y2={edge.y2}
+              stroke={edge.isClosingEdge ? '#ec4899' : '#06b6d4'}
+              strokeWidth={edge.isClosingEdge ? 2.5 : 2}
+              strokeDasharray={edge.isClosingEdge ? '4 3' : undefined}
+              markerEnd={edge.isClosingEdge ? 'url(#radial-closing-arrow)' : 'url(#radial-arrow)'}
+              style={{
+                transition: 'x1 300ms ease, y1 300ms ease, x2 300ms ease, y2 300ms ease',
+                willChange: 'x1, y1, x2, y2'
+              }}
+              className="transition-all duration-300"
+            />
+          </g>
+        );
+      } else {
+        return (
+          <g key={edge.id}>
+            <line
+              x1={edge.x1}
+              y1={edge.y1}
+              x2={edge.x2}
+              y2={edge.y2}
+              stroke="#38bdf8"
+              strokeWidth="2"
+              markerEnd="url(#linear-next-arrow)"
+              style={{
+                transition: 'x1 300ms ease, y1 300ms ease, x2 300ms ease, y2 300ms ease',
+                willChange: 'x1, y1, x2, y2'
+              }}
+              className="transition-all duration-300"
+            />
+          </g>
+        );
+      }
+    });
+  }, [layoutEdges, listType]);
+
+  // Stop running generator
   const stopExecution = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setIsPlaying(false);
@@ -150,10 +323,9 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
     stopExecution();
     generatorRef.current = gen;
     setIsPlaying(true);
-    // Initial step immediate
     setTimeout(() => {
       runNextStep();
-    }, 50);
+    }, 40);
   };
 
   // Toggle Play / Pause
@@ -187,7 +359,7 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       currentNodeIndex: -1,
       deletingIndex: -1,
       insertedIndex: -1,
-      status: `Step 1/3: Allocating new node with value ${val} in heap memory...`,
+      status: `Step 1/3: Allocating new node with value ${val}...`,
       description: 'Allocate Node'
     };
 
@@ -195,8 +367,8 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       currentNodeIndex: -1,
       deletingIndex: -1,
       insertedIndex: -1,
-      status: `Step 2/3: Pointing newNode.next -> current Head (${nodes[0] ? nodes[0].value : 'null'})...`,
-      description: 'Link Next Pointer'
+      status: `Step 2/3: Linking newNode.next -> current Head (${nodes[0] ? nodes[0].value : 'null'})...`,
+      description: 'Link Next'
     };
 
     const newNodes = [newNode, ...nodes];
@@ -205,19 +377,21 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       currentNodeIndex: 0,
       deletingIndex: -1,
       insertedIndex: 0,
-      status: `Step 3/3: Updated HEAD pointer to point to new node ${val}. O(1) constant time insertion complete!`,
+      status: `Step 3/3: Updated HEAD pointer to new node ${val}.${
+        listType === 'circular' ? ' Radial ring re-calculated.' : ''
+      }`,
       description: 'Head Updated'
     };
 
     yield {
       currentNodeIndex: -1,
       insertedIndex: -1,
-      status: `Insert at Head complete. New list length: ${newNodes.length}.`,
+      status: `Insert at Head complete. Total nodes: ${newNodes.length}.`,
       description: 'Complete'
     };
   }
 
-  // 2. Insert at Tail Generator (Traversal in Amber)
+  // 2. Insert at Tail Generator (Amber Traversal Pointer)
   function* insertAtTailGenerator(val) {
     const newId = Date.now();
     const newNode = { id: newId, value: val };
@@ -225,20 +399,20 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
     if (nodes.length === 0) {
       yield {
         currentNodeIndex: -1,
-        status: `List is empty. Allocating new node ${val} as Head & Tail...`,
-        description: 'Empty List Insert'
+        status: `List is empty. Allocating node ${val} as Head & Tail...`,
+        description: 'Insert Single'
       };
       yield {
         nodes: [newNode],
         currentNodeIndex: 0,
         insertedIndex: 0,
-        status: `Node ${val} is now both Head and Tail. O(1).`,
+        status: `Node ${val} is now Head and Tail.`,
         description: 'Complete'
       };
       yield {
         currentNodeIndex: -1,
         insertedIndex: -1,
-        status: `Insert complete. List has 1 node.`,
+        status: `Insert complete.`,
         description: 'Idle'
       };
       return;
@@ -246,7 +420,7 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
 
     yield {
       currentNodeIndex: -1,
-      status: `Starting traversal to find Tail. Initializing traversal pointer (curr = head)...`,
+      status: `Starting traversal to find Tail. Pointer initialized at Head...`,
       description: 'Init Pointer'
     };
 
@@ -258,9 +432,9 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
         deletingIndex: -1,
         insertedIndex: -1,
         status: isTailNode
-          ? `Pointer reached Tail (index ${i}, value: ${nodes[i].value})! Ready to link newNode.`
-          : `Walking list: Pointer at index ${i} (value: ${nodes[i].value}) -> traversing to next node...`,
-        description: isTailNode ? 'Tail Reached' : `Traversing (index ${i})`
+          ? `Reached Tail (index ${i}, value ${nodes[i].value})! Ready to link newNode.`
+          : `Traversing: Pointer at index ${i} (value ${nodes[i].value}) -> advancing to next...`,
+        description: isTailNode ? 'Tail Reached' : `Traversing [${i}]`
       };
     }
 
@@ -271,8 +445,8 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       currentNodeIndex: newNodes.length - 1,
       insertedIndex: newNodes.length - 1,
       status: `Linked Tail.next -> newNode (${val}). ${
-        listType === 'circular' ? 'Circular pointer updated to point back to Head.' : ''
-      } O(n) traversal complete!`,
+        listType === 'circular' ? 'Radial ring expanded clockwise.' : ''
+      }`,
       description: 'Linked to Tail'
     };
 
@@ -284,7 +458,7 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
     };
   }
 
-  // 3. Delete Node Generator (Searches for value with amber pointer, then deletes)
+  // 3. Delete Node Generator
   function* deleteNodeGenerator(targetVal) {
     if (nodes.length === 0) {
       yield {
@@ -296,7 +470,7 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
 
     yield {
       currentNodeIndex: -1,
-      status: `Starting linear traversal to find target value ${targetVal}...`,
+      status: `Searching for target value ${targetVal}...`,
       description: 'Search Started'
     };
 
@@ -307,9 +481,9 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
         currentNodeIndex: i,
         deletingIndex: isMatch ? i : -1,
         status: isMatch
-          ? `Target found! Node at index ${i} matches value ${targetVal}. Relinking adjacent pointers...`
-          : `Searching: Inspecting index ${i} (value: ${nodes[i].value}) !== ${targetVal}. Advancing curr = curr.next...`,
-        description: isMatch ? 'Target Found' : `Inspecting index ${i}`
+          ? `Match found! Node index ${i} has value ${targetVal}. Relinking pointers...`
+          : `Searching: Index ${i} (${nodes[i].value}) !== ${targetVal}. Continuing...`,
+        description: isMatch ? 'Target Found' : `Inspecting [${i}]`
       };
 
       if (isMatch) {
@@ -321,17 +495,16 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
     if (targetIdx === -1) {
       yield {
         currentNodeIndex: -1,
-        status: `Value ${targetVal} was not found in the linked list. O(n) search finished.`,
+        status: `Value ${targetVal} was not found in the linked list.`,
         description: 'Not Found'
       };
       return;
     }
 
-    // Prepare deletion
     yield {
       currentNodeIndex: targetIdx,
       deletingIndex: targetIdx,
-      status: `Unlinking node at index ${targetIdx} (${targetVal}): Bypassing pointers around node...`,
+      status: `Bypassing node at index ${targetIdx} (${targetVal}) from pointer chain...`,
       description: 'Unlink Pointers'
     };
 
@@ -340,10 +513,8 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       nodes: remainingNodes,
       currentNodeIndex: -1,
       deletingIndex: -1,
-      status: `Node ${targetVal} removed and deallocated. ${
-        listType === 'circular' ? 'Circular return path preserved.' : ''
-      } List size: ${remainingNodes.length}.`,
-      description: 'Deletion Complete'
+      status: `Node ${targetVal} removed. Remaining nodes: ${remainingNodes.length}.`,
+      description: 'Deleted'
     };
   }
 
@@ -359,36 +530,36 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
 
     yield {
       currentNodeIndex: -1,
-      status: `Beginning complete list traversal from HEAD...`,
-      description: 'Traversal Start'
+      status: `Beginning traversal from HEAD...`,
+      description: 'Start Traversal'
     };
 
     for (let i = 0; i < nodes.length; i++) {
       yield {
         currentNodeIndex: i,
-        status: `Visiting node at index ${i} [Value: ${nodes[i].value}].${
+        status: `Visiting node at index ${i} (value: ${nodes[i].value}).${
           i === nodes.length - 1 ? ' Reached end of list!' : ''
         }`,
-        description: `Visit index ${i}`
+        description: `Visit [${i}]`
       };
     }
 
     if (listType === 'circular') {
       yield {
         currentNodeIndex: 0,
-        status: `Circular link followed: Tail.next loops back to Head (index 0, value: ${nodes[0].value})!`,
-        description: 'Loop back to Head'
+        status: `Circular link followed: Tail.next loops back around to Head (index 0, value: ${nodes[0].value})!`,
+        description: 'Loop to Head'
       };
     }
 
     yield {
       currentNodeIndex: -1,
-      status: `Traversal finished. Visited all ${nodes.length} nodes in O(n) time.`,
+      status: `Traversal finished in O(n) time.`,
       description: 'Complete'
     };
   }
 
-  // Operation Handlers
+  // Handlers
   const handleInsertHead = (e) => {
     if (e) e.preventDefault();
     const val = inputValue.trim() !== '' ? parseInt(inputValue, 10) : Math.floor(Math.random() * 90) + 10;
@@ -475,13 +646,13 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
             </button>
           </div>
 
-          {/* Sub-variant Switcher: Singly, Doubly, Circular */}
+          {/* Sub-variant Switcher: Singly, Doubly, Circular (Radial) */}
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
             <span className="text-xs font-mono text-theme-text-muted mr-1">Variant:</span>
             <button
               onClick={() => {
                 setListType('singly');
-                setStatusMessage('Switched to Singly Linked List (unidirectional next pointers).');
+                setStatusMessage('Switched to Singly Linked List (horizontal linear layout).');
               }}
               className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
                 listType === 'singly'
@@ -495,7 +666,7 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
             <button
               onClick={() => {
                 setListType('doubly');
-                setStatusMessage('Switched to Doubly Linked List (bidirectional Next & Prev pointers).');
+                setStatusMessage('Switched to Doubly Linked List (bidirectional Next & Prev).');
               }}
               className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
                 listType === 'doubly'
@@ -509,15 +680,16 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
             <button
               onClick={() => {
                 setListType('circular');
-                setStatusMessage('Switched to Circular Linked List (Tail.next routes back to Head).');
+                setStatusMessage('Switched to Circular Linked List (Radial Clockwise Layout).');
               }}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
+              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border flex items-center gap-1.5 ${
                 listType === 'circular'
                   ? 'bg-theme-card text-cyan-400 font-bold border-cyan-500 shadow-subtle'
                   : 'bg-theme-surface text-theme-text-muted hover:text-theme-text border-theme-border'
               }`}
             >
-              Circular (Tail ⤾ Head)
+              <Compass className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Circular (Radial Ring)</span>
             </button>
           </div>
         </div>
@@ -544,8 +716,10 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
           </div>
           <div className="h-4 w-px bg-theme-border" />
           <div>
-            <span className="text-theme-text-muted">Search / Tail Walk:</span>{' '}
-            <span className="font-semibold text-amber-400">O(n)</span>
+            <span className="text-theme-text-muted">Topology:</span>{' '}
+            <span className="font-semibold text-amber-400">
+              {listType === 'circular' ? 'Radial Ring' : 'Linear Chain'}
+            </span>
           </div>
         </div>
       </div>
@@ -646,7 +820,6 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
             <RotateCcw className="w-4 h-4" />
           </button>
 
-          {/* Speed Selector */}
           <div className="flex items-center gap-1 ml-1 text-xs font-mono text-theme-text-muted">
             <span>Speed:</span>
             <select
@@ -655,20 +828,20 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
               className="bg-theme-card border border-theme-border rounded px-1.5 py-0.5 text-theme-text text-xs focus:outline-none font-mono"
             >
               <option value={700}>Slow (700ms)</option>
-              <option value={400}>Normal (400ms)</option>
+              <option value={350}>Normal (350ms)</option>
               <option value={150}>Fast (150ms)</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Main Canvas Viewport */}
+      {/* Main Canvas Viewport: Supports Smooth Morphing between Radial Ring and Linear Row */}
       <div
         ref={containerRef}
-        className="flex-1 min-h-[420px] bg-theme-surface rounded-xl border border-theme-border p-6 flex flex-col justify-between shadow-subtle relative overflow-x-auto overflow-y-hidden"
+        className="flex-1 min-h-[460px] bg-theme-surface rounded-xl border border-theme-border p-6 flex flex-col justify-between shadow-subtle relative overflow-hidden"
       >
         {/* Floating Status & Step HUD */}
-        <div className="flex items-center justify-between pointer-events-none z-10 mb-6">
+        <div className="flex items-center justify-between pointer-events-none z-20 mb-4">
           <div className="flex items-center gap-2 text-xs font-mono bg-theme-bg/95 backdrop-blur-md px-3.5 py-2 rounded-lg border border-theme-border text-theme-text max-w-xl truncate shadow-subtle">
             <Info className="w-4 h-4 text-theme-primary flex-shrink-0" />
             <span className="truncate">{statusMessage}</span>
@@ -680,234 +853,188 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
           </div>
         </div>
 
-        {/* Nodes Horizontal Render Chamber */}
-        <div className="flex items-center justify-start min-w-max py-8 px-4 relative z-0">
-          <AnimatePresence mode="popLayout">
-            {nodes.map((node, index) => {
-              const isHead = index === 0;
-              const isTail = index === nodes.length - 1;
-              const isCurrent = currentNodeIndex === index;
-              const isDeleting = deletingIndex === index;
-              const isNewlyInserted = insertedIndex === index;
+        {/* Dynamic Canvas Container */}
+        <div className="relative flex-1 w-full h-full min-h-[360px]">
+          {/* SVG Connector Layer */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+            <defs>
+              <marker
+                id="radial-arrow"
+                viewBox="0 0 10 10"
+                refX="7"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#06b6d4" />
+              </marker>
+              <marker
+                id="radial-closing-arrow"
+                viewBox="0 0 10 10"
+                refX="7"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 1 L 9 5 L 0 9 z" fill="#ec4899" />
+              </marker>
+              <marker
+                id="linear-next-arrow"
+                viewBox="0 0 10 10"
+                refX="7"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+              </marker>
+            </defs>
+
+            {/* Circular Variant: Subtle Orbital Guide Ring Track */}
+            {listType === 'circular' && layoutNodes.length > 1 && (
+              <circle
+                cx={centerPos.cx}
+                cy={centerPos.cy}
+                r={radius}
+                fill="none"
+                stroke="var(--color-border)"
+                strokeWidth="1.5"
+                strokeDasharray="4 6"
+                strokeOpacity="0.4"
+                className="transition-all duration-300"
+              />
+            )}
+
+            {/* Edges Connecting Nodes */}
+            {edgeElements}
+          </svg>
+
+          {/* Morphing Nodes Layer with unique layoutId so they physically swing from line to circle */}
+          <AnimatePresence>
+            {layoutNodes.map((node) => {
+              const isHead = node.index === 0;
+              const isTail = node.index === layoutNodes.length - 1;
+              const isCurrent = currentNodeIndex === node.index;
+              const isDeleting = deletingIndex === node.index;
+              const isNewlyInserted = insertedIndex === node.index;
 
               return (
                 <motion.div
                   key={node.id}
-                  ref={(el) => (nodeRefs.current[node.id] = el)}
                   layout
-                  initial={{ opacity: 0, scale: 0.7, y: -25 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.5, y: 25 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                  className="flex items-center"
+                  layoutId={`ll-node-${node.id}`}
+                  animate={{
+                    x: node.x - NODE_WIDTH / 2,
+                    y: node.y - NODE_HEIGHT / 2,
+                    scale: isCurrent ? 1.08 : 1,
+                    opacity: 1
+                  }}
+                  transition={{ type: 'spring', stiffness: 220, damping: 25 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: NODE_WIDTH,
+                    height: NODE_HEIGHT
+                  }}
+                  className="z-10 group"
                 >
-                  {/* Before Head Label for Doubly Linked List */}
-                  {isHead && listType === 'doubly' && (
-                    <div className="flex items-center mr-2 text-xs font-mono text-theme-text-muted opacity-60">
-                      <span className="px-1.5 py-0.5 rounded bg-theme-bg border border-theme-border">
-                        NULL
+                  {/* Active Traversal Pointer Indicator (Amber) */}
+                  {isCurrent && (
+                    <motion.div
+                      layoutId="activePointerBadge"
+                      className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
+                    >
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-bold uppercase tracking-wider shadow-lg">
+                        CURR
                       </span>
-                      <ArrowLeft className="w-3.5 h-3.5 ml-1 text-theme-text-muted" />
-                    </div>
+                    </motion.div>
                   )}
 
-                  {/* Individual Node Box */}
-                  <div className="relative group flex flex-col items-center">
-                    {/* Active Traversal Pointer Indicator (Amber) */}
-                    {isCurrent && (
-                      <motion.div
-                        layoutId="activePointer"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute -top-10 flex flex-col items-center z-20 pointer-events-none"
-                      >
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold uppercase tracking-wider shadow-lg">
-                          CURR POINTER
-                        </span>
-                        <div className="w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-amber-500" />
-                      </motion.div>
+                  {/* Node Badge: HEAD / TAIL / [i] */}
+                  <div className="absolute -top-3 left-1 flex items-center gap-0.5 z-20 pointer-events-none text-[8px] font-mono">
+                    {isHead && (
+                      <span className="px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                        H
+                      </span>
                     )}
-
-                    {/* Node Header Tags: HEAD / TAIL / Index */}
-                    <div className="flex items-center gap-1 mb-1 text-[10px] font-mono">
-                      {isHead && (
-                        <span className="px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold">
-                          HEAD
-                        </span>
-                      )}
-                      {isTail && (
-                        <span className="px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold">
-                          TAIL
-                        </span>
-                      )}
-                      <span className="text-theme-text-muted">[{index}]</span>
-                    </div>
-
-                    {/* Node Memory Card Structure */}
-                    <div
-                      onClick={() => handleDeleteNodeDirect(node.value)}
-                      title="Click to delete this node"
-                      className={`cursor-pointer rounded-xl font-mono text-xs shadow-subtle border-2 transition-all duration-200 overflow-hidden ${
-                        isCurrent
-                          ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-4 ring-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.5)] scale-105'
-                          : isDeleting
-                          ? 'border-red-500 bg-red-500/20 text-red-200 ring-4 ring-red-500/40'
-                          : isNewlyInserted
-                          ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200 ring-2 ring-emerald-400/40'
-                          : 'border-theme-border bg-theme-card hover:border-theme-primary/60 text-theme-text'
-                      }`}
-                    >
-                      {/* Node Inner Layout */}
-                      <div className="flex items-stretch divide-x divide-theme-border">
-                        {/* Doubly: Prev Pointer Field */}
-                        {listType === 'doubly' && (
-                          <div className="px-2 py-3 bg-theme-bg/40 flex flex-col items-center justify-center text-[10px] text-theme-text-muted">
-                            <span className="text-[9px] text-theme-accent">prev</span>
-                            <span className="text-emerald-400 font-bold">
-                              {index > 0 ? `•` : `ø`}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Node Value Container */}
-                        <div className="px-5 py-3 flex flex-col items-center justify-center min-w-[70px]">
-                          <span className="text-[9px] uppercase tracking-wider text-theme-text-muted">
-                            data
-                          </span>
-                          <span className="text-base font-bold text-theme-text tracking-tight">
-                            {node.value}
-                          </span>
-                        </div>
-
-                        {/* Next Pointer Field */}
-                        <div className="px-2.5 py-3 bg-theme-bg/40 flex flex-col items-center justify-center text-[10px] text-theme-text-muted">
-                          <span className="text-[9px] text-theme-accent">next</span>
-                          <span className="text-cyan-400 font-bold">
-                            {isTail && listType !== 'circular' ? `ø` : `•`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Quick-Delete prompt on hover */}
-                    <span className="text-[9px] font-mono text-theme-text-muted/50 group-hover:text-red-400 mt-1 transition-colors">
-                      delete
+                    {isTail && (
+                      <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
+                        T
+                      </span>
+                    )}
+                    <span className="text-theme-text-muted bg-theme-bg/80 px-1 rounded">
+                      [{node.index}]
                     </span>
                   </div>
 
-                  {/* Connectors Between Nodes */}
-                  {!isTail ? (
-                    <div className="flex flex-col items-center justify-center mx-2.5 space-y-1">
-                      {/* Next Pointer (Right Arrow) */}
-                      <div className="flex items-center text-cyan-400">
-                        <div className="w-5 h-0.5 bg-cyan-400/80" />
-                        <ArrowRight className="w-4 h-4 -ml-1 text-cyan-400" />
-                      </div>
-
-                      {/* Doubly: Prev Pointer (Left Arrow) */}
+                  {/* Physical Memory Card Box */}
+                  <div
+                    onClick={() => handleDeleteNodeDirect(node.value)}
+                    title="Click to delete this node"
+                    className={`w-full h-full cursor-pointer rounded-xl font-mono text-xs shadow-subtle border-2 transition-all duration-200 overflow-hidden flex flex-col justify-between ${
+                      isCurrent
+                        ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-4 ring-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                        : isDeleting
+                        ? 'border-red-500 bg-red-500/20 text-red-200 ring-4 ring-red-500/40'
+                        : isNewlyInserted
+                        ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200 ring-2 ring-emerald-400/40'
+                        : 'border-theme-border bg-theme-card hover:border-theme-primary/60 text-theme-text'
+                    }`}
+                  >
+                    <div className="flex items-stretch h-full divide-x divide-theme-border">
+                      {/* Doubly: Prev Pointer Field */}
                       {listType === 'doubly' && (
-                        <div className="flex items-center text-emerald-400">
-                          <ArrowLeft className="w-4 h-4 -mr-1 text-emerald-400" />
-                          <div className="w-5 h-0.5 bg-emerald-400/80" />
+                        <div className="w-5 bg-theme-bg/40 flex flex-col items-center justify-center text-[8px] text-theme-text-muted">
+                          <span className="text-emerald-400 font-bold">
+                            {node.index > 0 ? `•` : `ø`}
+                          </span>
                         </div>
                       )}
-                    </div>
-                  ) : (
-                    /* End of List: NULL or Circular Indication */
-                    listType !== 'circular' && (
-                      <div className="flex items-center ml-3 text-xs font-mono text-theme-text-muted">
-                        <ArrowRight className="w-4 h-4 mr-1.5 text-theme-text-muted" />
-                        <span className="px-2 py-1 rounded bg-theme-bg border border-theme-border font-bold">
-                          NULL
+
+                      {/* Data Value */}
+                      <div className="flex-1 flex flex-col items-center justify-center">
+                        <span className="text-[7px] uppercase tracking-wider text-theme-text-muted leading-none">
+                          data
+                        </span>
+                        <span className="text-sm font-bold text-theme-text leading-tight mt-0.5">
+                          {node.value}
                         </span>
                       </div>
-                    )
-                  )}
+
+                      {/* Next Pointer Field */}
+                      <div className="w-5 bg-theme-bg/40 flex flex-col items-center justify-center text-[8px] text-theme-text-muted">
+                        <span className="text-cyan-400 font-bold">
+                          {isTail && listType !== 'circular' ? `ø` : `•`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
 
           {nodes.length === 0 && (
-            <div className="flex flex-col items-center justify-center w-full py-12 text-center text-xs font-mono text-theme-text-muted">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-xs font-mono text-theme-text-muted">
               <AlertCircle className="w-6 h-6 mb-2 text-theme-primary/60" />
               <span>List is empty. Use the controls above to insert elements.</span>
             </div>
           )}
         </div>
 
-        {/* Circular Linked List Return Path SVG Overlay */}
-        {listType === 'circular' && circularPathData && (
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-            <defs>
-              <marker
-                id="circular-arrow"
-                viewBox="0 0 10 10"
-                refX="6"
-                refY="5"
-                markerWidth="6"
-                markerHeight="6"
-                orient="auto-start-reverse"
-              >
-                <path d="M 0 1 L 9 5 L 0 9 z" fill="#06b6d4" />
-              </marker>
-            </defs>
-
-            {/* Glowing Shadow Path */}
-            <path
-              d={circularPathData.path}
-              fill="none"
-              stroke="#06b6d4"
-              strokeWidth="4"
-              strokeOpacity="0.2"
-              className="filter blur-sm"
-            />
-
-            {/* Main Animated Return Curve */}
-            <path
-              d={circularPathData.path}
-              fill="none"
-              stroke="#06b6d4"
-              strokeWidth="2"
-              strokeDasharray="6 4"
-              markerEnd="url(#circular-arrow)"
-            />
-
-            {/* Circular Return Badge */}
-            <g transform={`translate(${(circularPathData.startX + circularPathData.endX) / 2 - 60}, ${circularPathData.curveY - 8})`}>
-              <rect
-                width="120"
-                height="20"
-                rx="4"
-                fill="#0f1418"
-                stroke="#06b6d4"
-                strokeWidth="1"
-                opacity="0.9"
-              />
-              <text
-                x="60"
-                y="14"
-                textAnchor="middle"
-                fill="#06b6d4"
-                fontSize="10"
-                fontFamily="monospace"
-                fontWeight="bold"
-              >
-                Tail.next ⤾ Head
-              </text>
-            </g>
-          </svg>
-        )}
-
         {/* Bottom Educational Footnote */}
-        <div className="border-t border-theme-border pt-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono text-theme-text-muted">
+        <div className="border-t border-theme-border pt-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono text-theme-text-muted z-20">
           <div className="p-3 rounded-lg bg-theme-bg/40 border border-theme-border">
             <div className="text-cyan-400 font-bold mb-1 flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Singly Linked</span>
             </div>
             <p className="text-[11px] font-sans leading-relaxed">
-              1 forward pointer per node. Memory efficient, strictly unidirectional. $O(1)$ head insertion, $O(n)$ search and tail insertion.
+              Horizontal linear chain. 1 pointer per node. Linear $O(n)$ search, $O(1)$ head insertion.
             </p>
           </div>
 
@@ -917,17 +1044,17 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
               <span>Doubly Linked</span>
             </div>
             <p className="text-[11px] font-sans leading-relaxed">
-              2 pointers per node (prev and next). Enables bidirectional traversal and $O(1)$ node removal given node reference.
+              Bidirectional traversal with prev and next pointers. Enables $O(1)$ deletion given node reference.
             </p>
           </div>
 
           <div className="p-3 rounded-lg bg-theme-bg/40 border border-theme-border">
-            <div className="text-purple-400 font-bold mb-1 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Circular Linked</span>
+            <div className="text-pink-400 font-bold mb-1 flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-pink-400" />
+              <span>Radial Circular Ring</span>
             </div>
             <p className="text-[11px] font-sans leading-relaxed">
-              Tail node loops back to Head. Zero NULL pointers. Essential for round-robin CPU scheduling and streaming ring buffers.
+              True circular radial coordinates: $x = c_x + R\cos(\theta)$, $y = c_y + R\sin(\theta)$. Last node links back to Head in an endless loop.
             </p>
           </div>
         </div>

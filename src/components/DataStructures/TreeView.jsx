@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Zap,
-  Sparkles,
   ArrowRight
 } from 'lucide-react';
 import { AVLTree } from '../../core/algorithms/trees/avlTree';
@@ -227,19 +226,19 @@ export function TreeView() {
   const getNodeColorClass = (node) => {
     // 1. Imbalance warning
     if (treeState.imbalanceNodeId === node.id) {
-      return 'bg-red-500/20 border-red-500 text-red-200 ring-4 ring-red-500/30';
+      return 'bg-rose-500/15 border-rose-500 text-rose-200 ring-1 ring-rose-500/40';
     }
     // 2. Newly rotated node
     if (treeState.rotatedNodeIds?.includes(node.id)) {
-      return 'bg-purple-500/20 border-purple-400 text-purple-200 ring-4 ring-purple-400/30';
+      return 'bg-purple-500/15 border-purple-400 text-purple-200 ring-1 ring-purple-400/40';
     }
     // 3. Active comparison traversal
     if (treeState.activeNodeId === node.id) {
-      return 'bg-amber-500/20 border-amber-400 text-amber-200 ring-4 ring-amber-400/40 shadow-glow';
+      return 'bg-amber-500/15 border-amber-400 text-amber-200 ring-1 ring-amber-400/40';
     }
     // 4. Newly inserted leaf
     if (treeState.newNodeId === node.id) {
-      return 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-2 ring-emerald-400/30';
+      return 'bg-emerald-500/15 border-emerald-400 text-emerald-200 ring-1 ring-emerald-400/40';
     }
     // 5. Default node
     return 'bg-theme-card border-theme-border text-theme-text hover:border-theme-primary';
@@ -292,7 +291,7 @@ export function TreeView() {
       {/* Rotation Presets Bar */}
       <div className="space-y-2">
         <div className="text-xs font-mono text-theme-text-muted flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-theme-primary" />
+          <GitBranch className="w-3.5 h-3.5 text-theme-primary" />
           <span>Interactive Rotation Presets:</span>
         </div>
         <div className="flex flex-wrap gap-2">

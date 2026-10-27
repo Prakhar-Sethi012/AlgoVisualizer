@@ -9,7 +9,6 @@ import {
   RotateCcw,
   Plus,
   Minus,
-  Sparkles,
   Info,
   CheckCircle2,
   AlertCircle
@@ -115,10 +114,10 @@ export function StackQueueView({ initialMode = 'stack', onSwitchStructure, curre
       {/* Top Header & Mode Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="inline-flex items-center gap-1 bg-theme-bg/60 p-1 rounded-lg border border-theme-border mb-2">
             <button
               onClick={() => onSwitchStructure && onSwitchStructure('linked-list')}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border"
+              className="px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent"
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Linked Lists</span>
@@ -126,10 +125,10 @@ export function StackQueueView({ initialMode = 'stack', onSwitchStructure, curre
 
             <button
               onClick={() => handleModeSwitch('stack')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 mode === 'stack'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -138,10 +137,10 @@ export function StackQueueView({ initialMode = 'stack', onSwitchStructure, curre
 
             <button
               onClick={() => handleModeSwitch('queue')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 mode === 'queue'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <ArrowRight className="w-3.5 h-3.5" />
@@ -197,12 +196,12 @@ export function StackQueueView({ initialMode = 'stack', onSwitchStructure, curre
         {mode === 'stack' && (
           <div className="flex flex-col items-center justify-end h-[300px] w-full max-w-xs pt-8">
             <div className="text-[11px] font-mono text-theme-accent mb-2 flex items-center gap-1">
-              <ArrowDown className="w-3 h-3 animate-bounce" />
+              <ArrowDown className="w-3 h-3 animate-pulse" />
               <span>TOP OF STACK</span>
             </div>
 
             {/* Stack Chamber (Open Top, Bordered Sides & Bottom) */}
-            <div className="w-full flex-1 border-b-4 border-l-4 border-r-4 border-theme-border rounded-b-xl p-3 flex flex-col-reverse items-center justify-start gap-2 bg-theme-bg/40 backdrop-blur-sm overflow-y-auto">
+            <div className="w-full flex-1 border border-t-0 border-theme-border rounded-b-xl p-3 flex flex-col-reverse items-center justify-start gap-2 bg-theme-bg/40 backdrop-blur-sm overflow-y-auto">
               <AnimatePresence mode="popLayout">
                 {items.map((item, idx) => {
                   const isTop = idx === items.length - 1;
@@ -256,7 +255,7 @@ export function StackQueueView({ initialMode = 'stack', onSwitchStructure, curre
             </div>
 
             {/* Queue Pipeline Container */}
-            <div className="w-full border-t-4 border-b-4 border-theme-border rounded-lg py-4 px-3 flex items-center justify-start gap-2.5 bg-theme-bg/40 backdrop-blur-sm overflow-x-auto min-h-[90px]">
+            <div className="w-full border border-theme-border rounded-xl py-4 px-4 flex items-center justify-start gap-2.5 bg-theme-bg/40 backdrop-blur-sm overflow-x-auto min-h-[90px]">
               <AnimatePresence mode="popLayout">
                 {items.map((item, idx) => {
                   const isFront = idx === 0;

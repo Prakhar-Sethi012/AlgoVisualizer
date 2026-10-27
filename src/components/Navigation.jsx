@@ -118,156 +118,42 @@ export function Navigation({
       </div>
 
       {/* Primary Workspace View Toggles */}
-      <div className="p-3 border-b border-theme-border space-y-1 bg-theme-bg/30">
-        <button
-          onClick={() => onViewChange && onViewChange('home')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'home'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <HomeIcon className="w-3.5 h-3.5" />
-            <span>Overview / Home</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'home' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-          }`}>
-            Guide
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('visualizer')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'visualizer'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Visualizer Lab</span>
-          </div>
-          <span className="text-[9px] px-1.5 py-0.2 rounded bg-black/10">
-            Generators
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('data-structures')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'data-structures'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Box className="w-3.5 h-3.5" />
-            <span>Linear Structures</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'data-structures' ? 'bg-black/10' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-          }`}>
-            Lists & Queues
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('trees')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'trees'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <GitBranch className="w-3.5 h-3.5" />
-            <span>AVL Tree</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'trees' ? 'bg-black/10' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-          }`}>
-            Rotations
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('equation-converter')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'equation-converter'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Calculator className="w-3.5 h-3.5 text-pink-400" />
-            <span>Equation Converter</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'equation-converter' ? 'bg-black/10' : 'bg-pink-500/10 text-pink-400 border border-pink-500/20'
-          }`}>
-            RPN / AST
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('graphs')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'graphs'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Network className="w-3.5 h-3.5" />
-            <span>Graphs</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'graphs' ? 'bg-black/10' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-          }`}>
-            Dijkstra / MST
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('benchmark')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'benchmark'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Benchmark Lab</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'benchmark' ? 'bg-black/10' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-          }`}>
-            Web Worker
-          </span>
-        </button>
-
-        <button
-          onClick={() => onViewChange && onViewChange('recurrence')}
-          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
-            currentView === 'recurrence'
-              ? 'bg-theme-primary text-slate-950 shadow-subtle'
-              : 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Recurrence Solver</span>
-          </div>
-          <span className={`text-[9px] px-1.5 py-0.2 rounded ${
-            currentView === 'recurrence' ? 'bg-black/10' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-          }`}>
-            Master Thm
-          </span>
-        </button>
+      <div className="p-3 border-b border-theme-border space-y-1 bg-theme-bg/20">
+        {[
+          { id: 'home', label: 'Overview / Home', icon: HomeIcon, tag: 'Guide' },
+          { id: 'visualizer', label: 'Visualizer Lab', icon: Play, tag: 'Generators' },
+          { id: 'data-structures', label: 'Linear Structures', icon: Box, tag: 'Lists & Queues' },
+          { id: 'trees', label: 'AVL Tree', icon: GitBranch, tag: 'Rotations' },
+          { id: 'equation-converter', label: 'Equation Converter', icon: Calculator, tag: 'AST / RPN' },
+          { id: 'graphs', label: 'Graphs', icon: Network, tag: 'Dijkstra / MST' },
+          { id: 'benchmark', label: 'Benchmark Lab', icon: Zap, tag: 'Web Worker' },
+          { id: 'recurrence', label: 'Recurrence Solver', icon: Calculator, tag: 'Master Thm' },
+        ].map(({ id, label, icon: Icon, tag }) => {
+          const isActive = currentView === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onViewChange && onViewChange(id)}
+              className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono transition-all duration-150 ${
+                isActive
+                  ? 'bg-white/5 text-white font-semibold border-l-2 border-indigo-500 pl-[10px]'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04] border-l-2 border-transparent pl-[10px]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <span>{label}</span>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
+                isActive
+                  ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
+                  : 'bg-theme-bg/60 text-slate-500 border-theme-border/60'
+              }`}>
+                {tag}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Navigation Groups for Algorithms */}
@@ -321,12 +207,12 @@ export function Navigation({
                         }
                       }}
                       disabled={!algo.implemented}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
                         isSelected
-                          ? 'bg-theme-primary/15 text-theme-primary font-semibold'
+                          ? 'bg-white/5 text-white font-semibold border-l-2 border-indigo-500 pl-2'
                           : algo.implemented
-                          ? 'text-theme-text hover:bg-theme-surface-hover hover:text-theme-primary'
-                          : 'text-theme-text-muted/50 cursor-not-allowed hover:bg-transparent'
+                          ? 'text-slate-400 hover:text-white hover:bg-white/[0.04] border-l-2 border-transparent pl-2'
+                          : 'text-slate-600 cursor-not-allowed border-l-2 border-transparent pl-2'
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -341,8 +227,8 @@ export function Navigation({
                       <span
                         className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
                           algo.implemented
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-theme-surface border border-theme-border text-theme-text-muted/60'
+                            ? 'bg-theme-bg/60 text-theme-text-muted border border-theme-border/60'
+                            : 'bg-theme-surface border border-theme-border text-theme-text-muted/40'
                         }`}
                       >
                         {algo.tag}
@@ -375,7 +261,7 @@ export function Navigation({
         </select>
         <div className="mt-2 text-[10px] text-theme-text-muted font-mono px-1 flex items-center justify-between">
           <span>Engine Core:</span>
-          <span className="text-emerald-400">Generator + Trees</span>
+          <span className="text-theme-text-muted">Generator + Web Worker</span>
         </div>
       </div>
     </aside>

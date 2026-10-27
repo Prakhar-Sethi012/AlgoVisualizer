@@ -82,16 +82,16 @@
   --color-border-subtle: #242424;
   --color-text: #ffffff; /* White */
   --color-text-muted: #9e9e9e;
-  --color-primary: #0066ff; /* Electric Blue */
-  --color-primary-hover: #1a75ff;
-  --color-accent: #00ffff; /* Neon Cyan */
-  --color-highlight: #00ffff;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-accent: #38bdf8;
+  --color-highlight: #38bdf8;
 
   --color-algo-default: #3f3f46;
   --color-algo-comparing: #f59e0b;
   --color-algo-swapped: #ef4444;
-  --color-algo-sorted: #00ffff;
-  --color-algo-pivot: #0066ff;
+  --color-algo-sorted: #10b981;
+  --color-algo-pivot: #2563eb;
   --color-algo-overwriting: #38bdf8;
 }
 
@@ -125,10 +125,33 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Sora', system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
   overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typographic Polish: Balanced Headings & Prettier Paragraphs */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+  letter-spacing: -0.025em;
+}
+
+p {
+  text-wrap: pretty;
+  line-height: 1.6;
+}
+
+/* Tabular numerals for timers, indices, telemetry, and benchmarks */
+.font-mono,
+code,
+pre,
+[data-tabular] {
+  font-feature-settings: "tnum" 1, "zero" 1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Custom minimal scrollbar */

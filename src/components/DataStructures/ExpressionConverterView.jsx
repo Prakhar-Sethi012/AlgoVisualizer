@@ -6,7 +6,6 @@ import {
   Pause,
   StepForward,
   RotateCcw,
-  Sparkles,
   Info,
   CheckCircle2,
   Copy,
@@ -316,23 +315,23 @@ export function ExpressionConverterView() {
     const isVisited = visitedNodeIds.includes(node.id);
     const isOperator = ['+', '-', '*', '/', '^', '%'].includes(node.value);
 
-    // 1. Active Traversal Focus (Glowing Pink Accent)
+    // 1. Active Traversal Focus (Clean Primary Accent)
     if (isActive) {
-      return 'border-pink-500 bg-pink-500/25 text-pink-200 ring-4 ring-pink-400/70 shadow-[0_0_25px_rgba(236,72,153,0.8)] scale-110';
+      return 'border-theme-primary bg-theme-primary/20 text-theme-text ring-1 ring-theme-primary/50 font-semibold scale-105';
     }
 
-    // 2. Visited in Traversal (Glowing Emerald Accent)
+    // 2. Visited in Traversal (Subtle Emerald Accent)
     if (isVisited) {
-      return 'border-emerald-500 bg-emerald-500/20 text-emerald-200 ring-2 ring-emerald-400/40';
+      return 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30';
     }
 
-    // 3. Unvisited Operator (Cyan Accent)
+    // 3. Unvisited Operator
     if (isOperator) {
-      return 'border-cyan-500/60 bg-cyan-950/40 text-cyan-300 hover:border-cyan-400';
+      return 'border-sky-500/40 bg-sky-950/30 text-sky-200 hover:border-sky-400/60';
     }
 
-    // 4. Unvisited Operand Leaf (Purple Accent)
-    return 'border-purple-500/60 bg-purple-950/40 text-purple-300 hover:border-purple-400';
+    // 4. Unvisited Operand Leaf
+    return 'border-theme-border bg-theme-card text-theme-text hover:border-theme-primary/40';
   };
 
   // Result tokens array for animated display chips
@@ -344,8 +343,8 @@ export function ExpressionConverterView() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-cyan-400 to-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 text-pink-400" />
+            <span className="text-xs font-mono font-bold text-theme-primary uppercase tracking-wider flex items-center gap-1.5">
+              <Calculator className="w-4 h-4 text-theme-primary" />
               <span>Expression Tree &amp; Notation Converter</span>
             </span>
           </div>
@@ -353,19 +352,21 @@ export function ExpressionConverterView() {
           {/* Quick Presets */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-mono text-theme-text-muted mr-1">Presets:</span>
-            {EQUATION_PRESETS.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => handleLoadPreset(p.expr)}
-                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
-                  equationInput === p.expr
-                    ? 'bg-theme-card text-pink-400 font-bold border-pink-500/60 shadow-subtle'
-                    : 'bg-theme-surface text-theme-text-muted hover:text-theme-text border-theme-border'
-                }`}
-              >
-                {p.expr}
-              </button>
-            ))}
+            <div className="inline-flex flex-wrap items-center gap-1 bg-theme-bg/50 p-1 rounded-lg border border-theme-border/60">
+              {EQUATION_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => handleLoadPreset(p.expr)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
+                    equationInput === p.expr
+                      ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                      : 'text-theme-text-muted hover:text-theme-text border-transparent'
+                  }`}
+                >
+                  {p.expr}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -657,9 +658,9 @@ export function ExpressionConverterView() {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border transition-all ${
                               isLatest
-                                ? 'bg-pink-500 text-slate-950 border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.6)] scale-105'
+                                ? 'bg-theme-primary text-slate-950 border-theme-primary font-bold scale-105 shadow-sm'
                                 : isOp
-                                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                                ? 'bg-sky-500/15 text-sky-200 border-sky-500/30'
                                 : 'bg-theme-bg text-theme-text border-theme-border'
                             }`}
                           >

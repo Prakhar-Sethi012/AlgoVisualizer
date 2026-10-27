@@ -378,30 +378,30 @@ export function GraphView() {
   const getNodeColorClass = (node) => {
     // 1. Active node extracted from queue
     if (visualState.activeNodeId === node.id) {
-      return 'bg-amber-500/25 border-amber-400 text-amber-200 ring-4 ring-amber-400/40 shadow-glow';
+      return 'bg-amber-500/20 border-amber-400 text-amber-200 ring-1 ring-amber-400/40';
     }
     // 2. Neighbor node under evaluation
     if (visualState.neighborNodeId === node.id) {
-      return 'bg-cyan-500/20 border-cyan-400 text-cyan-200 ring-4 ring-cyan-400/30';
+      return 'bg-sky-500/15 border-sky-400 text-sky-200 ring-1 ring-sky-400/30';
     }
     // 3. Final path node in Dijkstra
     if (visualState.pathNodeIds?.includes(node.id)) {
-      return 'bg-cyan-500/25 border-cyan-400 text-cyan-200 ring-4 ring-cyan-400/40';
+      return 'bg-sky-500/20 border-sky-400 text-sky-200 ring-1 ring-sky-400/40';
     }
     // 4. Visited node
     if (visualState.visitedNodeIds?.includes(node.id)) {
-      return 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-2 ring-emerald-400/30';
+      return 'bg-emerald-500/15 border-emerald-400 text-emerald-200 ring-1 ring-emerald-400/30';
     }
     // 5. Start node (if idle/ready)
     if (algoMode === 'dijkstra' && node.id === startNodeId) {
-      return 'bg-purple-500/20 border-purple-400 text-purple-200 ring-2 ring-purple-400/40';
+      return 'bg-indigo-500/15 border-indigo-400 text-indigo-200 ring-1 ring-indigo-400/40';
     }
     // 6. Target node (if idle/ready)
     if (algoMode === 'dijkstra' && node.id === targetNodeId) {
-      return 'bg-rose-500/20 border-rose-400 text-rose-200 ring-2 ring-rose-400/40';
+      return 'bg-rose-500/15 border-rose-400 text-rose-200 ring-1 ring-rose-400/40';
     }
     // 7. Default node
-    return 'bg-theme-card border-theme-border text-theme-text hover:border-theme-primary';
+    return 'bg-theme-card border-theme-border text-theme-text hover:border-theme-primary/50';
   };
 
   return (
@@ -416,7 +416,7 @@ export function GraphView() {
             <span className="px-2 py-0.5 text-xs font-mono rounded bg-theme-primary/10 border border-theme-primary/20 text-theme-primary">
               {algoMode === 'dijkstra' ? "Dijkstra's Shortest Path" : "Kruskal's MST"}
             </span>
-            <span className="px-2 py-0.5 text-xs font-mono rounded bg-theme-surface border border-theme-border text-theme-accent">
+            <span className="px-2 py-0.5 text-xs font-mono rounded bg-theme-surface border border-theme-border text-theme-text-muted">
               {algoMode === 'dijkstra' ? 'O((V + E) log V)' : 'O(E log E)'}
             </span>
           </div>
@@ -428,27 +428,27 @@ export function GraphView() {
         </div>
 
         {/* Algorithm Mode Switcher */}
-        <div className="flex items-center gap-1.5 bg-theme-surface p-1 rounded-lg border border-theme-border font-mono text-xs">
+        <div className="flex items-center gap-1 bg-theme-bg/60 p-1 rounded-lg border border-theme-border font-mono text-xs">
           <button
             onClick={() => handleModeChange('dijkstra')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors border ${
               algoMode === 'dijkstra'
-                ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
-                : 'text-theme-text-muted hover:text-theme-text'
+                ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                : 'text-theme-text-muted hover:text-theme-text border-transparent'
             }`}
           >
-            <Waypoints className="w-3.5 h-3.5 text-purple-400" />
+            <Waypoints className={`w-3.5 h-3.5 ${algoMode === 'dijkstra' ? 'text-theme-primary' : 'text-theme-text-muted'}`} />
             <span>Dijkstra</span>
           </button>
           <button
             onClick={() => handleModeChange('kruskal')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors border ${
               algoMode === 'kruskal'
-                ? 'bg-theme-card text-cyan-400 font-semibold shadow-subtle border border-theme-border'
-                : 'text-theme-text-muted hover:text-theme-text'
+                ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                : 'text-theme-text-muted hover:text-theme-text border-transparent'
             }`}
           >
-            <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
+            <GitBranch className={`w-3.5 h-3.5 ${algoMode === 'kruskal' ? 'text-theme-primary' : 'text-theme-text-muted'}`} />
             <span>Kruskal MST</span>
           </button>
         </div>

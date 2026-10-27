@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Search,
-  Sparkles,
   Info,
   Layers,
   ArrowRight,
@@ -608,13 +607,13 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
           {/* Main Linear Structures Switcher */}
-          <div className="flex items-center gap-2 mb-2">
+          <div className="inline-flex items-center gap-1 bg-theme-bg/60 p-1 rounded-lg border border-theme-border mb-2">
             <button
               onClick={() => onSwitchStructure && onSwitchStructure('linked-list')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 currentStructure === 'linked-list'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -623,10 +622,10 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
 
             <button
               onClick={() => onSwitchStructure && onSwitchStructure('stack')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 currentStructure === 'stack'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <ArrowRight className="w-3.5 h-3.5" />
@@ -635,10 +634,10 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
 
             <button
               onClick={() => onSwitchStructure && onSwitchStructure('queue')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 currentStructure === 'queue'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -647,50 +646,52 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
           </div>
 
           {/* Sub-variant Switcher: Singly, Doubly, Circular (Radial) */}
-          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className="text-xs font-mono text-theme-text-muted mr-1">Variant:</span>
-            <button
-              onClick={() => {
-                setListType('singly');
-                setStatusMessage('Switched to Singly Linked List (horizontal linear layout).');
-              }}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
-                listType === 'singly'
-                  ? 'bg-theme-card text-theme-primary font-bold border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface text-theme-text-muted hover:text-theme-text border-theme-border'
-              }`}
-            >
-              Singly Linked (Next -&gt;)
-            </button>
+            <div className="inline-flex items-center gap-1 bg-theme-bg/40 p-1 rounded-lg border border-theme-border/60">
+              <button
+                onClick={() => {
+                  setListType('singly');
+                  setStatusMessage('Switched to Singly Linked List (horizontal linear layout).');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
+                  listType === 'singly'
+                    ? 'bg-theme-surface text-theme-text font-medium border-theme-border shadow-subtle'
+                    : 'text-theme-text-muted hover:text-theme-text border-transparent'
+                }`}
+              >
+                Singly Linked
+              </button>
 
-            <button
-              onClick={() => {
-                setListType('doubly');
-                setStatusMessage('Switched to Doubly Linked List (bidirectional Next & Prev).');
-              }}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border ${
-                listType === 'doubly'
-                  ? 'bg-theme-card text-emerald-400 font-bold border-emerald-500 shadow-subtle'
-                  : 'bg-theme-surface text-theme-text-muted hover:text-theme-text border-theme-border'
-              }`}
-            >
-              Doubly Linked (&lt;- Prev | Next -&gt;)
-            </button>
+              <button
+                onClick={() => {
+                  setListType('doubly');
+                  setStatusMessage('Switched to Doubly Linked List (bidirectional Next & Prev).');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
+                  listType === 'doubly'
+                    ? 'bg-theme-surface text-theme-text font-medium border-theme-border shadow-subtle'
+                    : 'text-theme-text-muted hover:text-theme-text border-transparent'
+                }`}
+              >
+                Doubly Linked
+              </button>
 
-            <button
-              onClick={() => {
-                setListType('circular');
-                setStatusMessage('Switched to Circular Linked List (Radial Clockwise Layout).');
-              }}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all border flex items-center gap-1.5 ${
-                listType === 'circular'
-                  ? 'bg-theme-card text-cyan-400 font-bold border-cyan-500 shadow-subtle'
-                  : 'bg-theme-surface text-theme-text-muted hover:text-theme-text border-theme-border'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Circular (Radial Ring)</span>
-            </button>
+              <button
+                onClick={() => {
+                  setListType('circular');
+                  setStatusMessage('Switched to Circular Linked List (Radial Clockwise Layout).');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors border flex items-center gap-1.5 ${
+                  listType === 'circular'
+                    ? 'bg-theme-surface text-theme-text font-medium border-theme-border shadow-subtle'
+                    : 'text-theme-text-muted hover:text-theme-text border-transparent'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-theme-primary" />
+                <span>Circular (Radial Ring)</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -977,12 +978,12 @@ export function LinkedListView({ onSwitchStructure, currentStructure = 'linked-l
                     title="Click to delete this node"
                     className={`w-full h-full cursor-pointer rounded-xl font-mono text-xs shadow-subtle border-2 transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                       isCurrent
-                        ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-4 ring-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                        ? 'border-amber-400/80 bg-amber-500/15 text-amber-200 ring-1 ring-amber-400/40'
                         : isDeleting
-                        ? 'border-red-500 bg-red-500/20 text-red-200 ring-4 ring-red-500/40'
+                        ? 'border-rose-500/80 bg-rose-500/15 text-rose-200 ring-1 ring-rose-500/40'
                         : isNewlyInserted
-                        ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200 ring-2 ring-emerald-400/40'
-                        : 'border-theme-border bg-theme-card hover:border-theme-primary/60 text-theme-text'
+                        ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-500/40'
+                        : 'border-theme-border bg-theme-card hover:border-theme-primary/40 text-theme-text'
                     }`}
                   >
                     <div className="flex items-stretch h-full divide-x divide-theme-border">

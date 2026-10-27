@@ -19,7 +19,6 @@ import {
   Clock,
   Activity,
   Layers,
-  Sparkles,
   Info,
   TrendingUp,
   Search,
@@ -239,13 +238,13 @@ export function BenchmarkLab() {
       {/* Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="inline-flex items-center gap-1 bg-theme-bg/60 p-1 rounded-lg border border-theme-border mb-2">
             <button
               onClick={() => setBenchmarkMode('sorting')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 benchmarkMode === 'sorting'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <ArrowDownUp className="w-3.5 h-3.5" />
@@ -254,10 +253,10 @@ export function BenchmarkLab() {
 
             <button
               onClick={() => setBenchmarkMode('searching')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                 benchmarkMode === 'searching'
-                  ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                  : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                  ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                  : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
               }`}
             >
               <Search className="w-3.5 h-3.5" />
@@ -452,6 +451,8 @@ export function BenchmarkLab() {
               options={{
                 minimap: { enabled: false },
                 fontSize: 13,
+                fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                fontLigatures: true,
                 lineNumbers: 'on',
                 scrollBeyondLastLine: false,
                 automaticLayout: true,

@@ -10,7 +10,6 @@ import {
   Zap,
   ArrowDownUp,
   Layers,
-  Sparkles,
   Search,
   Target
 } from 'lucide-react';
@@ -274,37 +273,37 @@ export function VisualizerView({
   const getBarColorClass = (index) => {
     // 1. Found Target in Searching
     if (isSearching && state.foundIndex === index) {
-      return 'bg-algo-sorted shadow-glow ring-4 ring-emerald-400 font-bold';
+      return 'bg-algo-sorted ring-1 ring-emerald-400/60 font-semibold';
     }
 
     // 2. Binary Search Midpoint
     if (selectedAlgoId === 'binary-search' && state.mid === index) {
-      return 'bg-algo-comparing shadow-glow ring-4 ring-amber-300 font-bold';
+      return 'bg-algo-comparing ring-1 ring-amber-300/70 font-semibold';
     }
 
     // 3. Linear Search Current Inspection Index
     if (selectedAlgoId === 'linear-search' && state.currentIndex === index) {
-      return 'bg-algo-comparing shadow-glow ring-2 ring-amber-300';
+      return 'bg-algo-comparing ring-1 ring-amber-300/50';
     }
 
     // 4. Quick Sort Pivot
     const isPivot = state.pivot === index || (Array.isArray(state.pivot) && state.pivot.includes(index));
     if (isPivot) {
-      return 'bg-algo-pivot shadow-glow ring-2 ring-purple-400';
+      return 'bg-algo-pivot ring-1 ring-purple-400/50';
     }
 
     // 5. Merge Sort Overwriting
     const isOverwriting = state.overwriting?.includes(index) || state.overwriting === index;
     if (isOverwriting) {
-      return 'bg-algo-overwriting shadow-glow ring-2 ring-cyan-300';
+      return 'bg-algo-overwriting ring-1 ring-cyan-300/50';
     }
 
     // 6. Sorting Comparison / Swapped
     if (state.comparing?.includes(index)) {
       if (state.swapped) {
-        return 'bg-algo-swapped shadow-glow ring-2 ring-red-400';
+        return 'bg-algo-swapped ring-1 ring-rose-400/60';
       }
-      return 'bg-algo-comparing ring-2 ring-amber-300';
+      return 'bg-algo-comparing ring-1 ring-amber-300/40';
     }
 
     // 7. Sorted Indices
@@ -361,8 +360,8 @@ export function VisualizerView({
               </select>
             </div>
 
-            {/* Quick Pills */}
-            <div className="hidden sm:flex flex-wrap items-center gap-1.5">
+            {/* Minimalist Quick Tabs */}
+            <div className="hidden sm:flex flex-wrap items-center gap-1 bg-theme-bg/60 p-1 rounded-lg border border-theme-border">
               {Object.values(ALGORITHM_REGISTRY).map((algo) => {
                 const isActive = selectedAlgoId === algo.id;
                 const isSearchTab = algo.category === 'searching';
@@ -370,10 +369,10 @@ export function VisualizerView({
                   <button
                     key={algo.id}
                     onClick={() => handleAlgorithmSwitch(algo.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all flex items-center gap-1.5 border ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors flex items-center gap-1.5 border ${
                       isActive
-                        ? 'bg-theme-primary text-slate-950 border-theme-primary shadow-subtle'
-                        : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-theme-text border-theme-border'
+                        ? 'bg-theme-surface text-theme-text font-semibold border-theme-border shadow-subtle'
+                        : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/50 border-transparent'
                     }`}
                   >
                     {isSearchTab ? <Search className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}

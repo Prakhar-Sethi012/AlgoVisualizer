@@ -45,13 +45,15 @@ export default {
         'steel-blue': '#4a6fa5',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['Sora', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
         'minimal': '0 4px 12px -2px rgba(0, 0, 0, 0.08)',
-        'glow': '0 0 15px -3px var(--color-primary)',
+        'glow': '0 2px 6px -1px rgba(0, 0, 0, 0.16)',
+        'card-glow': '0 0 30px rgba(99, 102, 241, 0.10)',
+        'card-glow-sm': '0 0 20px rgba(99, 102, 241, 0.07)',
       }
     },
   },

@@ -1,18 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Navigation } from './components/Navigation';
+import { Navigation, AVAILABLE_THEMES } from './components/Navigation';
 import { Home } from './components/Home';
 import {
-  Cpu,
-  Play,
-  Zap,
-  Calculator,
-  Layers,
   Menu,
   X,
-  GitBranch,
-  Network,
-  Home as HomeIcon,
-  CheckCircle2
+  Search,
+  ChevronRight,
+  Palette
 } from 'lucide-react';
 
 // Code-split dynamic routes for optimized bundle sizes & fast initial load
@@ -53,12 +47,51 @@ function RouteFallback() {
   );
 }
 
+/** Builds a two-segment breadcrumb for the current view */
+function useBreadcrumb(currentView, selectedAlgo, selectedDS) {
+  const segments = (() => {
+    switch (currentView) {
+      case 'home':
+        return ['AlgoVisualizer', 'Overview'];
+      case 'visualizer': {
+        const names = {
+          'bubble-sort': 'Bubble Sort',
+          'quick-sort': 'Quick Sort',
+          'merge-sort': 'Merge Sort',
+          'heap-sort': 'Heap Sort',
+          'linear-search': 'Linear Search',
+          'binary-search': 'Binary Search',
+        };
+        return ['Visualizer Lab', names[selectedAlgo] || selectedAlgo];
+      }
+      case 'data-structures': {
+        const ds = { 'linked-list': 'Linked List', stack: 'Stack (LIFO)', queue: 'Queue (FIFO)' };
+        return ['Linear Structures', ds[selectedDS] || selectedDS];
+      }
+      case 'trees':
+        return ['Trees', 'AVL Tree'];
+      case 'equation-converter':
+        return ['Trees', 'Equation Converter'];
+      case 'graphs':
+        return ['Graphs', 'Dijkstra & Kruskal MST'];
+      case 'benchmark':
+        return ['Benchmark Lab', 'Web Worker Offloaded'];
+      case 'recurrence':
+        return ['Math Lab', 'Master Theorem Engine'];
+      default:
+        return ['AlgoVisualizer', currentView];
+    }
+  })();
+  return segments;
+}
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'visualizer' | 'data-structures' | 'trees' | 'graphs' | 'benchmark' | 'recurrence'
+  const [currentView, setCurrentView] = useState('home');
   const [selectedAlgo, setSelectedAlgo] = useState('bubble-sort');
   const [selectedDS, setSelectedDS] = useState('linked-list');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
 
   // Apply dynamic theme from secret_folder tokens to document body / root
   useEffect(() => {
@@ -71,46 +104,10 @@ export default function App() {
 
   const handleNavigate = (view, algoId) => {
     setCurrentView(view);
-    if (algoId) {
-      setSelectedAlgo(algoId);
-    }
+    if (algoId) setSelectedAlgo(algoId);
   };
 
-  const getBreadcrumb = () => {
-    switch (currentView) {
-      case 'home':
-        return '/ Overview / Theory vs. Reality';
-      case 'data-structures':
-        return `/ Linear Structures / ${
-          selectedDS === 'linked-list'
-            ? 'Linked List (Singly, Doubly, Circular)'
-            : selectedDS === 'stack'
-            ? 'Stack (LIFO)'
-            : 'Queue (FIFO)'
-        }`;
-      case 'trees':
-        return '/ Trees / AVL Tree (Self-Balancing Rotations)';
-      case 'equation-converter':
-        return '/ Trees / Equation Converter (Expression Tree Graph)';
-      case 'graphs':
-        return '/ Graphs / Dijkstra & Kruskal MST';
-      case 'benchmark':
-        return '/ Benchmarking Lab (Web Worker Offloaded)';
-      case 'recurrence':
-        return '/ Recurrence Solver (Master Theorem Engine)';
-      default: {
-        const names = {
-          'bubble-sort': 'Sorting / Bubble Sort',
-          'quick-sort': 'Sorting / Quick Sort',
-          'merge-sort': 'Sorting / Merge Sort',
-          'heap-sort': 'Sorting / Heap Sort',
-          'linear-search': 'Searching / Linear Search',
-          'binary-search': 'Searching / Binary Search'
-        };
-        return `/ ${names[selectedAlgo] || selectedAlgo}`;
-      }
-    }
-  };
+  const breadcrumb = useBreadcrumb(currentView, selectedAlgo, selectedDS);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-theme-bg text-theme-text font-sans">
@@ -140,20 +137,11 @@ export default function App() {
             </button>
             <Navigation
               currentView={currentView}
-              onViewChange={(v) => {
-                setCurrentView(v);
-                setIsMobileNavOpen(false);
-              }}
+              onViewChange={(v) => { setCurrentView(v); setIsMobileNavOpen(false); }}
               selectedAlgo={selectedAlgo}
-              onSelectAlgo={(id) => {
-                setSelectedAlgo(id);
-                setIsMobileNavOpen(false);
-              }}
+              onSelectAlgo={(id) => { setSelectedAlgo(id); setIsMobileNavOpen(false); }}
               selectedDS={selectedDS}
-              onSelectDS={(ds) => {
-                setSelectedDS(ds);
-                setIsMobileNavOpen(false);
-              }}
+              onSelectDS={(ds) => { setSelectedDS(ds); setIsMobileNavOpen(false); }}
               currentTheme={currentTheme}
               onThemeChange={setCurrentTheme}
             />
@@ -164,124 +152,81 @@ export default function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Minimalist Header */}
-        <header className="h-14 border-b border-theme-border bg-theme-surface/60 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        {/* Top Header: Breadcrumb · Search · Theme */}
+        <header className="h-12 border-b border-theme-border bg-theme-bg/80 backdrop-blur-md px-4 sm:px-5 flex items-center justify-between flex-shrink-0 gap-4">
+          {/* Left: Mobile hamburger + Breadcrumb */}
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setIsMobileNavOpen(true)}
-              className="md:hidden p-1.5 rounded-lg border border-theme-border text-theme-text"
+              className="md:hidden p-1.5 rounded-lg border border-theme-border text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/60 transition-colors"
+              aria-label="Open menu"
             >
               <Menu className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Production Ready</span>
-              </span>
-              <span className="text-xs font-mono text-theme-text-muted hidden sm:inline">
-                {getBreadcrumb()}
-              </span>
-            </div>
+            {/* Breadcrumb */}
+            <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs font-mono truncate">
+              <span className="text-theme-text-muted truncate">{breadcrumb[0]}</span>
+              {breadcrumb[1] && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-theme-border flex-shrink-0" />
+                  <span className="text-theme-text font-medium truncate">{breadcrumb[1]}</span>
+                </>
+              )}
+            </nav>
           </div>
 
-          {/* Quick Header View Toggle Switch */}
-          <div className="flex items-center gap-1.5 bg-theme-bg p-1 rounded-lg border border-theme-border text-xs font-mono overflow-x-auto max-w-[55vw] sm:max-w-none">
+          {/* Right: Search · Theme picker */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Global search (decorative) */}
             <button
-              onClick={() => setCurrentView('home')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'home'
-                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
+              className="p-1.5 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/60 transition-colors"
+              aria-label="Search"
+              title="Search (coming soon)"
             >
-              <HomeIcon className="w-3 h-3 text-purple-400" />
-              <span className="hidden sm:inline">Overview</span>
+              <Search className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={() => setCurrentView('visualizer')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'visualizer'
-                  ? 'bg-theme-card text-theme-primary font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Play className="w-3 h-3 fill-current" />
-              <span className="hidden sm:inline">Visualizer</span>
-            </button>
+            {/* Theme dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setThemePickerOpen((o) => !o)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-theme-border text-theme-text-muted hover:text-theme-text hover:bg-theme-surface/60 transition-colors text-xs font-mono"
+                aria-label="Change theme"
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Theme</span>
+              </button>
 
-            <button
-              onClick={() => setCurrentView('data-structures')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'data-structures'
-                  ? 'bg-theme-card text-cyan-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Layers className="w-3 h-3 text-cyan-400" />
-              <span className="hidden sm:inline">Linear Structures</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('trees')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'trees'
-                  ? 'bg-theme-card text-purple-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <GitBranch className="w-3 h-3 text-purple-400" />
-              <span className="hidden sm:inline">AVL Tree</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('equation-converter')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'equation-converter'
-                  ? 'bg-theme-card text-pink-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Calculator className="w-3 h-3 text-pink-400" />
-              <span className="hidden sm:inline">Converter</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('graphs')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'graphs'
-                  ? 'bg-theme-card text-cyan-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Network className="w-3 h-3 text-cyan-400" />
-              <span className="hidden sm:inline">Graphs</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('benchmark')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'benchmark'
-                  ? 'bg-theme-card text-emerald-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Zap className="w-3 h-3 text-emerald-400" />
-              <span className="hidden sm:inline">Benchmark</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('recurrence')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
-                currentView === 'recurrence'
-                  ? 'bg-theme-card text-amber-400 font-semibold shadow-subtle border border-theme-border'
-                  : 'text-theme-text-muted hover:text-theme-text'
-              }`}
-            >
-              <Calculator className="w-3 h-3 text-amber-400" />
-              <span className="hidden sm:inline">Solver</span>
-            </button>
+              {themePickerOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-30" onClick={() => setThemePickerOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-40 w-52 bg-theme-surface border border-theme-border rounded-xl shadow-minimal overflow-hidden">
+                    <div className="px-3 py-2 border-b border-theme-border text-[10px] font-mono uppercase tracking-wider text-theme-text-muted">
+                      Color Theme
+                    </div>
+                    {AVAILABLE_THEMES.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => { setCurrentTheme(t.id); setThemePickerOpen(false); }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-mono transition-colors ${
+                          currentTheme === t.id
+                            ? 'bg-theme-primary/10 text-theme-primary'
+                            : 'text-theme-text-muted hover:text-theme-text hover:bg-theme-surface-hover'
+                        }`}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full flex-shrink-0 border border-white/10"
+                          style={{ backgroundColor: t.hex }}
+                        />
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
